@@ -58,52 +58,61 @@ jobs:
         run: |
           docker compose build
 
+      - name: Prepare Trivy cache
+        run: |
+          mkdir -p .trivycache
+
       - name: Scan gateway_api image
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: "midas-dash-gateway_api:latest"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.trivycache:/root/.cache/" \
+            aquasec/trivy:0.65.0 image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            midas-dash-gateway_api:latest
 
       - name: Scan context_api image
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: "midas-dash-context_api:latest"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.trivycache:/root/.cache/" \
+            aquasec/trivy:0.65.0 image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            midas-dash-context_api:latest
 
       - name: Scan recommender_api image
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: "midas-dash-recommender_api:latest"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.trivycache:/root/.cache/" \
+            aquasec/trivy:0.65.0 image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            midas-dash-recommender_api:latest
 
       - name: Scan sentiment_api image
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: "midas-dash-sentiment_api:latest"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.trivycache:/root/.cache/" \
+            aquasec/trivy:0.65.0 image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            midas-dash-sentiment_api:latest
 
       - name: Scan midas_dash image
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: "midas-dash-midas_dash:latest"
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+        run: |
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "${{ github.workspace }}/.trivycache:/root/.cache/" \
+            aquasec/trivy:0.65.0 image \
+            --ignore-unfixed \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            midas-dash-midas_dash:latest
