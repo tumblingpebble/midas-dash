@@ -3,7 +3,7 @@ name: ci
 on:
   pull_request:
   push:
-    branches: ["main", "proto2-hud-2025-12-05"]
+    branches: ["main"]
 
 jobs:
   compose-smoke:
