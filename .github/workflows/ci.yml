@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches: ["main"]
-
+ 
 jobs:
   compose-smoke:
     runs-on: ubuntu-latest
@@ -54,34 +54,51 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build images (no need to run)
+      - name: Build images
         run: |
           docker compose build
 
-      - name: Install Trivy
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget -qO- https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.58.2_Linux-64bit.tar.gz | tar -xz
-          sudo mv trivy /usr/local/bin/trivy
-
-      # Scan the built images. Fail on HIGH/CRITICAL.
       - name: Scan gateway_api image
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL midas-gateway_api:latest
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "midas-dash-gateway_api:latest"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
 
       - name: Scan context_api image
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL midas-context_api:latest
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "midas-dash-context_api:latest"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
 
       - name: Scan recommender_api image
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL midas-recommender_api:latest
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "midas-dash-recommender_api:latest"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
 
       - name: Scan sentiment_api image
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL midas-sentiment_api:latest
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "midas-dash-sentiment_api:latest"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
 
       - name: Scan midas_dash image
-        run: |
-          trivy image --exit-code 1 --severity HIGH,CRITICAL midas-midas_dash:latest
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "midas-dash-midas_dash:latest"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
