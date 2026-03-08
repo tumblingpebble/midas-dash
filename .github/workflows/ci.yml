@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches: ["main"]
- 
+
 jobs:
   compose-smoke:
     runs-on: ubuntu-latest
@@ -59,46 +59,51 @@ jobs:
           docker compose build
 
       - name: Scan gateway_api image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "midas-dash-gateway_api:latest"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
-          severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
       - name: Scan context_api image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "midas-dash-context_api:latest"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
-          severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
       - name: Scan recommender_api image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "midas-dash-recommender_api:latest"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
-          severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
       - name: Scan sentiment_api image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "midas-dash-sentiment_api:latest"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
-          severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
 
       - name: Scan midas_dash image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "midas-dash-midas_dash:latest"
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
-          severity: "HIGH,CRITICAL"
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
