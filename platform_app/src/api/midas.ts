@@ -1,3 +1,62 @@
+export type OptionChainCandidate = {
+  contract_symbol?: string
+  side?: string
+  expiration?: string
+  dte?: number
+  strike?: number
+  last_price?: number | null
+  bid?: number | null
+  ask?: number | null
+  volume?: number | null
+  open_interest?: number | null
+  implied_volatility?: number | null
+  in_the_money?: boolean | null
+  moneyness_label?: string
+  role?: string
+}
+
+export type OptionChainPlan = {
+  provider?: string
+  available?: boolean
+  reason?: string | null
+  expirations?: string[]
+  selected_expiration?: string | null
+  candidates?: OptionChainCandidate[]
+}
+
+export type TradePlan = {
+  ticker?: string
+  strategy_family?: string
+  confidence_bucket?: string
+  instrument?: string
+  instrument_label?: string
+  summary?: string
+  entry_plan?: {
+    plain_english?: string
+    timing_note?: string
+  }
+  option_template?: {
+    dte_target?: string
+    dte_label?: string
+    strike_style?: string
+    strike_label?: string
+  }
+  hold_plan?: {
+    window?: string
+    plain_english?: string
+  }
+  exit_rules?: {
+    take_profit?: string
+    risk_exit?: string
+    time_exit?: string
+  }
+  watchouts?: string[]
+  education?: {
+    terms?: Record<string, string>
+  }
+  option_chain_plan?: OptionChainPlan
+}
+
 export type MidasExplain = {
   version?: string
   prediction?: { class: string; confidence: number; version?: string }
@@ -19,6 +78,7 @@ export type MidasRunResponse = {
     earnings_soon: boolean
     liquidity_flag: boolean
     [k: string]: unknown
+    trade_plan?: TradePlan
   }
   recommendation: { class: string; confidence: number; version?: string }
   one_liner: { text: string; refs_numbers?: Array<{ n: number; url: string }> }
