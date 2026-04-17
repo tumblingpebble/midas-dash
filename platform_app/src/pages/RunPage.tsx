@@ -9,6 +9,45 @@ import { MidasCanvas } from "../components/MidasCanvas"
 const LS_TICKER = "midas_dash_last_ticker_v1"
 const LS_LAST_RUN = "midas_dash_last_run_v1"
 
+const FEATURE_TOOLTIPS: Record<string, { label: string; help: string }> = {
+  sent_mean: {
+    label: "sent_mean",
+    help: "Average sentiment score from recent headlines. Negative values lean bearish, near 0 is neutral, and positive values lean bullish.",
+  },
+  sent_std: {
+    label: "sent_std",
+    help: "Variation in sentiment across recent headlines. Lower values mean the headlines agree more; higher values mean sentiment is mixed or noisy.",
+  },
+  r_1m: {
+    label: "r_1m",
+    help: "Very short-horizon return over roughly 1 minute. Positive values mean price moved up; negative values mean price moved down.",
+  },
+  r_5m: {
+    label: "r_5m",
+    help: "Short-horizon return over roughly 5 minutes. Positive values suggest recent upward momentum; negative values suggest recent weakness.",
+  },
+  above_sma20: {
+    label: "above_sma20",
+    help: "Whether the latest price is above the 20-period simple moving average. True can suggest near-term strength; false can suggest weaker short-term trend.",
+  },
+  mins_since_news: {
+    label: "mins_since_news",
+    help: "Minutes since the most recent relevant headline. Smaller numbers mean fresher news; larger numbers mean the news signal is older.",
+  },
+  rv20: {
+    label: "rv20",
+    help: "Normalized recent volatility proxy based on recent price movement range. Higher values mean more volatility; lower values mean calmer trading.",
+  },
+  earnings_soon: {
+    label: "earnings_soon",
+    help: "Whether earnings are expected soon. True means an earnings event is near, which can increase uncertainty and volatility.",
+  },
+  liquidity_flag: {
+    label: "liquidity_flag",
+    help: "Simple liquidity check using spread and volume heuristics. True suggests trading conditions look more liquid; false suggests thinner trading conditions.",
+  },
+}
+
 function loadTicker(): string {
   return localStorage.getItem(LS_TICKER) ?? "AAPL"
 }
@@ -97,8 +136,24 @@ function secondsSince(iso?: string, nowMs?: number): number | null {
   return Math.max(0, s)
 }
 
+function FeatureLabel({ feature }: { feature: string }) {
+  const meta = FEATURE_TOOLTIPS[feature]
+  return (
+    <span
+      title={meta?.help ?? feature}
+      style={{ textDecoration: "underline dotted", cursor: "help" }}
+      className="text-slate-200"
+    >
+      {meta?.label ?? feature}
+    </span>
+  )
+}
+
 function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number }) {
   const quality = String(run.quote?.quality ?? "unknown")
+  const spreadQuality = String((run.quote as any)?.spread_quality ?? "unknown")
+  const lastSource = String((run.quote as any)?.last_source ?? "unknown")
+
   const r1 = Number(run.features?.r_1m ?? 0)
   const r5 = Number(run.features?.r_5m ?? 0)
 
@@ -106,9 +161,19 @@ function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number })
   const lowIntradaySignal = Math.abs(r1) < 0.0005 && Math.abs(r5) < 0.0005
 
   let msg = ""
+
   if (quality === "estimated") {
     msg =
-      "Quote quality is marked as “estimated.” Short-horizon signals may be less reliable; consider re-checking during active market conditions."
+      "Last price is marked as estimated. Short-horizon signals may be less reliable."
+  } else if (quality === "derived") {
+    msg =
+      "Last price is derived from a fallback source rather than a direct live quote."
+  } else if (quality === "unknown") {
+    msg =
+      "Quote quality is unknown. Treat short-horizon signals cautiously."
+  } else if (quality === "real" && spreadQuality === "estimated") {
+    msg =
+      "Last price appears live; bid/ask spread is estimated because provider bid/ask was unavailable."
   } else if (isNoAction && lowIntradaySignal) {
     msg =
       "No actionable setup detected from current short-horizon price movement. Try again after a price move or new headlines."
@@ -125,6 +190,9 @@ function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number })
   const responseAgeSec = secondsSince(run.ts_gateway, nowMs)
 
   let hint = ""
+  if (lastSource !== "unknown") {
+    hint += ` Last source: ${lastSource}.`
+  }
   if (headlineAgeMin !== null) hint += ` Headline age: ${headlineAgeMin} min.`
   if (cacheAgeSec !== null) hint += ` Cache age (at fetch): ${cacheAgeSec}s.`
   if (responseAgeSec !== null) hint += ` Response age: ${responseAgeSec}s.`
@@ -163,7 +231,9 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
               <div className="mt-2 space-y-2">
                 {ex.top_importances.map((it) => (
                   <div key={it.feature} className="flex items-center gap-3">
-                    <div className="w-40 truncate text-xs text-slate-200">{it.feature}</div>
+                    <div className="w-40 truncate text-xs">
+                      <FeatureLabel feature={it.feature} />
+                    </div>
                     <div className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
                       <div
                         className="h-2 bg-orange-500"
@@ -182,6 +252,17 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
           {ex.inputs && (
             <div>
               <div className="text-xs text-slate-400">Inputs used for prediction</div>
+
+              <div className="mt-2 space-y-1 rounded-lg bg-slate-900 p-2 text-xs">
+                {Object.entries(ex.inputs).map(([key, value]) => (
+                  <div key={key} className="flex flex-wrap gap-2">
+                    <FeatureLabel feature={key} />
+                    <span className="text-slate-400">:</span>
+                    <span className="text-slate-200">{String(value)}</span>
+                  </div>
+                ))}
+              </div>
+
               <pre className="mt-2 overflow-auto rounded-lg bg-slate-900 p-2 text-xs text-slate-200">
                 {JSON.stringify(ex.inputs, null, 2)}
               </pre>
@@ -290,7 +371,6 @@ export function RunPage() {
             <div className="mt-3 space-y-3">
               <ContextBanner run={data} nowMs={nowMs} />
 
-
               <div className="rounded-xl bg-slate-950 px-3 py-3">
                 <div className="text-xs text-slate-400">One-liner</div>
                 <div className="mt-1 text-sm text-slate-100">
@@ -298,9 +378,11 @@ export function RunPage() {
                 </div>
                 <RefLinks run={data} />
               </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
-              <MidasCanvas run={data} />
-            </div>
+
+              <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
+                <MidasCanvas run={data} />
+              </div>
+
               {data.top_headline?.url && (
                 <a
                   href={data.top_headline.url}
@@ -335,7 +417,11 @@ export function RunPage() {
                   <div className="mt-1 text-sm">
                     Last: {data.quote?.last ?? "—"}{" "}
                     <span className="text-slate-400">
-                      ({data.quote?.quality ?? "unknown"})
+                      ({data.quote?.quality ?? "unknown"}
+                      {(data.quote as any)?.spread_quality
+                        ? ` / spread: ${(data.quote as any).spread_quality}`
+                        : ""}
+                      )
                     </span>
                   </div>
                 </div>
