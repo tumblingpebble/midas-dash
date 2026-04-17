@@ -43,6 +43,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
       rv20,
       quote: Number(run.quote?.last ?? 0),
       quality: String(run.quote?.quality ?? "unknown"),
+      spreadQuality: String((run.quote as any)?.spread_quality ?? "unknown"),
       ts: String(run.ts_gateway ?? ""),
     }
   }, [run])
@@ -63,13 +64,11 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     const ctx = canvas.getContext("2d")
     if (!ctx) return
 
-    // IMPORTANT: use a non-null alias so TS doesn't complain in nested closures
     const g = ctx
 
     g.setTransform(dpr, 0, 0, dpr, 0, 0)
     g.imageSmoothingEnabled = false
 
-    // Colors
     const text = "#ffffff"
     const sub = "#e5e7eb"
     const accent = "#f97316"
@@ -115,7 +114,6 @@ export function MidasCanvas({ run, height = 200 }: Props) {
       const color = sent < 0 ? bad : good
       drawBar(x, y, ww, hh, p, color)
 
-      // neutral marker
       g.strokeStyle = border
       g.lineWidth = 1
       g.beginPath()
@@ -160,10 +158,8 @@ export function MidasCanvas({ run, height = 200 }: Props) {
       g.textBaseline = "alphabetic"
     }
 
-    // clear
     g.clearRect(0, 0, width, H)
 
-    // layout
     const px = 24
     const py = 22
     const pw = width - 36
@@ -172,7 +168,19 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     drawText(px + 70, py + 6, data.rec, text, "14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
 
     const q = data.quote ? data.quote.toFixed(2) : "—"
-    drawText(px, py + 26, `last: ${q} (${data.quality})`, sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
+    const qualityText =
+      data.spreadQuality && data.spreadQuality !== "unknown"
+        ? `${data.quality} / spr:${data.spreadQuality}`
+        : data.quality
+
+    drawText(
+      px,
+      py + 26,
+      `last: ${q} (${qualityText})`,
+      sub,
+      "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto"
+    )
+
     if (data.ts) drawText(px, py + 44, `ts: ${data.ts}`, sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
 
     const gaugeCx = px + 74

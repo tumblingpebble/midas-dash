@@ -22,7 +22,15 @@ export type MidasRunResponse = {
   }
   recommendation: { class: string; confidence: number; version?: string }
   one_liner: { text: string; refs_numbers?: Array<{ n: number; url: string }> }
-  quote?: { last?: number; bid?: number; ask?: number; quality?: string }
+  quote?: {
+  last?: number
+  bid?: number
+  ask?: number
+  quality?: string
+  spread_quality?: string
+  last_source?: string
+  ts?: string
+  }
   top_headline?: { title: string; publisher?: string; ts?: string; url?: string }
   refs?: Array<{ title: string; publisher?: string; url: string } | null>
   refs_sources?: string[]
