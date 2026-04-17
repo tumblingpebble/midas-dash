@@ -1,17 +1,29 @@
 from __future__ import annotations
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 import os, httpx, time
 from datetime import datetime, timezone
 
 CTX_URL = os.getenv("CTX_URL", "http://127.0.0.1:8012")
 REC_URL = os.getenv("REC_URL", "http://127.0.0.1:8014")
+ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "*")
 
 TIMEOUT = float(os.getenv("GATEWAY_TIMEOUT_S", "8"))
 RETRIES = int(os.getenv("GATEWAY_RETRIES", "2"))
 DELAY   = float(os.getenv("GATEWAY_RETRY_DELAY_S", "0.25"))
 
 app = FastAPI(title="MIDAS Gateway API", version="v1")
+
+# CORS for browser-based frontend
+origins = ["*"] if ALLOW_ORIGINS == "*" else [o.strip() for o in ALLOW_ORIGINS.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
@@ -72,7 +84,7 @@ def run(
     # 2) recommendation
     rec = _post_json(f"{REC_URL}/api/recommend", features)
 
-    # 2b) optional explainability (global feature importances + inputs + prediction)
+    # 2b) optional explainability
     explain_payload: Optional[Dict[str, Any]] = None
     if explain == 1:
         try:
@@ -80,7 +92,7 @@ def run(
         except HTTPException:
             explain_payload = {"error": "explain unavailable"}
 
-    # 3) one-liner build (pass refs for ([1][2][3]))
+    # 3) one-liner build
     headline = top_headline or {"title": "", "publisher": "", "url": ""}
     try:
         one = _post_json(f"{CTX_URL}/api/one_liner", {
@@ -94,7 +106,7 @@ def run(
     except HTTPException:
         one = {"text": f"{rec.get('class','NO_ACTION')} · {int(rec.get('confidence',0)*100)}% confidence"}
 
-    # 4) cache age (seconds since context timestamp)
+    # 4) cache age
     now = datetime.now(timezone.utc)
     tctx = _parse_iso(ts_ctx) if isinstance(ts_ctx, str) else None
     age_s = int((now - tctx).total_seconds()) if tctx else None

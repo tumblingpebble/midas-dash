@@ -1,6 +1,9 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 COPY platform_app/package*.json ./
 RUN npm ci
 
@@ -8,8 +11,6 @@ COPY platform_app/ ./
 RUN npm run build
 
 FROM nginx:alpine
-
-# Pull in patched Alpine packages to address image CVEs
 RUN apk update && apk upgrade --no-cache
 
 COPY --from=build /app/dist /usr/share/nginx/html

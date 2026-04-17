@@ -1,0 +1,203 @@
+name: Deploy MIDAS DASH to Cloud Run (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: "Branch, tag, or SHA to deploy"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  AR_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
+  AR_HOST: us-central1-docker.pkg.dev
+
+  CONTEXT_SERVICE: context-api
+  RECOMMENDER_SERVICE: recommender-api
+  GATEWAY_SERVICE: gateway-api
+  WEB_SERVICE: midas-dash-web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: midas-dash-manual-cloud-run
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout requested ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker "${AR_HOST}" --quiet
+
+      - name: Set deploy metadata
+        shell: bash
+        run: |
+          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "${GITHUB_ENV}"
+          echo "IMAGE_PREFIX=${AR_HOST}/${PROJECT_ID}/${AR_REPO}" >> "${GITHUB_ENV}"
+
+      - name: Build and push context-api image
+        run: |
+          docker build \
+            -f services/Dockerfile \
+            --build-arg REQ_FILE=requirements.base.txt \
+            --build-arg APP_MODULE=services.context_api.app:app \
+            -t "${IMAGE_PREFIX}/context-api:${SHORT_SHA}" \
+            .
+          docker push "${IMAGE_PREFIX}/context-api:${SHORT_SHA}"
+
+      - name: Deploy context-api
+        run: |
+          gcloud run deploy "${CONTEXT_SERVICE}" \
+            --image "${IMAGE_PREFIX}/context-api:${SHORT_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080
+
+      - name: Capture context-api URL
+        shell: bash
+        run: |
+          CONTEXT_URL="$(gcloud run services describe "${CONTEXT_SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          echo "CONTEXT_URL=${CONTEXT_URL}" >> "${GITHUB_ENV}"
+          echo "context-api URL: ${CONTEXT_URL}"
+
+      - name: Smoke test context-api
+        run: |
+          curl -fsS "${CONTEXT_URL}/healthz"
+
+      - name: Build and push recommender-api image
+        run: |
+          docker build \
+            -f services/Dockerfile \
+            --build-arg REQ_FILE=requirements.base.txt \
+            --build-arg APP_MODULE=services.recommender_api.app:app \
+            -t "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}" \
+            .
+          docker push "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}"
+
+      - name: Deploy recommender-api
+        run: |
+          gcloud run deploy "${RECOMMENDER_SERVICE}" \
+            --image "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080
+
+      - name: Capture recommender-api URL
+        shell: bash
+        run: |
+          RECOMMENDER_URL="$(gcloud run services describe "${RECOMMENDER_SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          echo "RECOMMENDER_URL=${RECOMMENDER_URL}" >> "${GITHUB_ENV}"
+          echo "recommender-api URL: ${RECOMMENDER_URL}"
+
+      - name: Smoke test recommender-api
+        run: |
+          curl -fsS "${RECOMMENDER_URL}/healthz"
+
+      - name: Build and push gateway-api image
+        run: |
+          docker build \
+            -f services/Dockerfile \
+            --build-arg REQ_FILE=requirements.base.txt \
+            --build-arg APP_MODULE=services.gateway_api.app:app \
+            -t "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}" \
+            .
+          docker push "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}"
+
+      - name: Deploy gateway-api
+        shell: bash
+        run: |
+          gcloud run deploy "${GATEWAY_SERVICE}" \
+            --image "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars "CTX_URL=${CONTEXT_URL},REC_URL=${RECOMMENDER_URL},ALLOW_ORIGINS=*"
+
+      - name: Capture gateway-api URL
+        shell: bash
+        run: |
+          GATEWAY_URL="$(gcloud run services describe "${GATEWAY_SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          echo "GATEWAY_URL=${GATEWAY_URL}" >> "${GITHUB_ENV}"
+          echo "gateway-api URL: ${GATEWAY_URL}"
+
+      - name: Smoke test gateway-api
+        run: |
+          curl -fsS "${GATEWAY_URL}/healthz"
+          echo
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | head -c 400
+          echo
+
+      - name: Build and push web image
+        run: |
+          docker build \
+            -f platform_app/Dockerfile \
+            --build-arg VITE_API_BASE_URL="${GATEWAY_URL}" \
+            -t "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}" \
+            .
+          docker push "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}"
+
+      - name: Deploy midas-dash-web
+        run: |
+          gcloud run deploy "${WEB_SERVICE}" \
+            --image "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080
+
+      - name: Final verification
+        shell: bash
+        run: |
+          WEB_URL="$(gcloud run services describe "${WEB_SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+
+          echo "Deployed:"
+          echo "  context-api      ${CONTEXT_URL}"
+          echo "  recommender-api  ${RECOMMENDER_URL}"
+          echo "  gateway-api      ${GATEWAY_URL}"
+          echo "  midas-dash-web   ${WEB_URL}"
+
+          echo
+          echo "Web headers:"
+          curl -I "${WEB_URL}"
