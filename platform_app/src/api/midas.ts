@@ -57,6 +57,53 @@ export type TradePlan = {
   option_chain_plan?: OptionChainPlan
 }
 
+export type MidasRunResponse = {
+  ticker: string
+  features: Record<string, unknown>
+  recommendation: {
+    class: string
+    confidence: number
+    version?: string
+  }
+  one_liner?: {
+    text?: string
+    refs_numbers?: Array<{ n: number; url: string }>
+  }
+  quote?: {
+    last?: number
+    bid?: number
+    ask?: number
+    quality?: string
+    spread_quality?: string
+    last_source?: string
+    ts?: string
+  }
+  top_headline?: {
+    title?: string
+    publisher?: string
+    ts?: string
+    url?: string
+  }
+  refs?: Array<{ title?: string; publisher?: string; url?: string } | null>
+  refs_sources?: string[]
+  ts_ctx?: string
+  ts_gateway?: string
+  cache_age_seconds?: number
+  features_note?: string
+  explain?: {
+    version?: string
+    prediction?: {
+      class?: string
+      confidence?: number
+      version?: string
+    }
+    inputs?: Record<string, unknown>
+    top_importances?: Array<{ feature: string; importance: number }>
+    error?: string
+  }
+  trade_plan?: TradePlan
+}
+
 export type MidasExplain = {
   version?: string
   prediction?: { class: string; confidence: number; version?: string }

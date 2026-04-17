@@ -151,8 +151,8 @@ function FeatureLabel({ feature }: { feature: string }) {
 
 function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number }) {
   const quality = String(run.quote?.quality ?? "unknown")
-  const spreadQuality = String((run.quote as any)?.spread_quality ?? "unknown")
-  const lastSource = String((run.quote as any)?.last_source ?? "unknown")
+  const spreadQuality = String(run.quote?.spread_quality ?? "unknown")
+  const lastSource = String(run.quote?.last_source ?? "unknown")
 
   const r1 = Number(run.features?.r_1m ?? 0)
   const r5 = Number(run.features?.r_5m ?? 0)
@@ -322,7 +322,7 @@ function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
 }
 
 function TradePlanPanel({ run }: { run: MidasRunResponse }) {
-  const plan = (run as any).trade_plan
+  const plan = run.trade_plan
   if (!plan) return null
 
   const optionChainPlan = plan.option_chain_plan
@@ -402,7 +402,7 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
           <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Watchouts</div>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-200">
-              {plan.watchouts.map((w: string, i: number) => (
+              {plan.watchouts.map((w, i) => (
                 <li key={`${w}-${i}`}>{w}</li>
               ))}
             </ul>
@@ -595,8 +595,8 @@ export function RunPage() {
                     Last: {data.quote?.last ?? "—"}{" "}
                     <span className="text-slate-400">
                       ({data.quote?.quality ?? "unknown"}
-                      {(data.quote as any)?.spread_quality
-                        ? ` / spread: ${(data.quote as any).spread_quality}`
+                      {data.quote?.spread_quality
+                        ? ` / spread: ${data.quote.spread_quality}`
                         : ""}
                       )
                     </span>
