@@ -173,7 +173,7 @@ function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number })
       "Quote quality is unknown. Treat short-horizon signals cautiously."
   } else if (quality === "real" && spreadQuality === "estimated") {
     msg =
-      "Last price appears live; bid/ask spread is estimated because provider bid/ask was unavailable."
+      "Last price appears valid; bid/ask spread is estimated because provider bid/ask was unavailable."
   } else if (isNoAction && lowIntradaySignal) {
     msg =
       "No actionable setup detected from current short-horizon price movement. Try again after a price move or new headlines."
@@ -270,6 +270,183 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
           )}
         </div>
       )}
+    </details>
+  )
+}
+
+function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
+  if (!optionChainPlan?.available || !optionChainPlan?.candidates?.length) {
+    return (
+      <div className="mt-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400">
+        No candidate contracts available for this setup.
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-3 overflow-x-auto">
+      <table className="min-w-full text-xs">
+        <thead className="text-slate-400">
+          <tr className="border-b border-slate-800">
+            <th className="px-2 py-2 text-left">Role</th>
+            <th className="px-2 py-2 text-left">Side</th>
+            <th className="px-2 py-2 text-left">Strike</th>
+            <th className="px-2 py-2 text-left">Exp</th>
+            <th className="px-2 py-2 text-left">DTE</th>
+            <th className="px-2 py-2 text-left">Moneyness</th>
+            <th className="px-2 py-2 text-left">Bid</th>
+            <th className="px-2 py-2 text-left">Ask</th>
+            <th className="px-2 py-2 text-left">OI</th>
+            <th className="px-2 py-2 text-left">Vol</th>
+          </tr>
+        </thead>
+        <tbody>
+          {optionChainPlan.candidates.map((c: any) => (
+            <tr key={c.contract_symbol} className="border-b border-slate-900 text-slate-200">
+              <td className="px-2 py-2">{c.role}</td>
+              <td className="px-2 py-2">{c.side}</td>
+              <td className="px-2 py-2">{c.strike}</td>
+              <td className="px-2 py-2">{c.expiration}</td>
+              <td className="px-2 py-2">{c.dte}</td>
+              <td className="px-2 py-2">{c.moneyness_label}</td>
+              <td className="px-2 py-2">{c.bid ?? "—"}</td>
+              <td className="px-2 py-2">{c.ask ?? "—"}</td>
+              <td className="px-2 py-2">{c.open_interest ?? "—"}</td>
+              <td className="px-2 py-2">{c.volume ?? "—"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function TradePlanPanel({ run }: { run: MidasRunResponse }) {
+  const plan = (run as any).trade_plan
+  if (!plan) return null
+
+  const optionChainPlan = plan.option_chain_plan
+
+  return (
+    <details className="rounded-xl bg-slate-950 px-3 py-3" open>
+      <summary className="cursor-pointer text-sm text-slate-200">Suggested trade plan</summary>
+
+      <div className="mt-3 space-y-4">
+        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="text-xs text-slate-400">Setup</div>
+          <div className="mt-1 text-sm text-slate-100">
+            <span className="font-semibold">{plan.instrument_label ?? "Plan"}</span>
+            {plan.confidence_bucket ? (
+              <span className="ml-2 text-slate-400">({plan.confidence_bucket} confidence bucket)</span>
+            ) : null}
+          </div>
+          {plan.summary && <div className="mt-2 text-sm text-slate-300">{plan.summary}</div>}
+        </div>
+
+        {plan.entry_plan && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Entry idea</div>
+            <div className="mt-1 text-sm text-slate-200">
+              {plan.entry_plan.plain_english ?? "—"}
+            </div>
+          </div>
+        )}
+
+        {plan.option_template && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Option template</div>
+            <div className="mt-2 grid gap-3 md:grid-cols-2 text-sm">
+              <div>
+                <div className="text-slate-400">Expiration</div>
+                <div className="text-slate-200">{plan.option_template.dte_label ?? plan.option_template.dte_target ?? "—"}</div>
+              </div>
+              <div>
+                <div className="text-slate-400">Strike style</div>
+                <div className="text-slate-200">{plan.option_template.strike_label ?? plan.option_template.strike_style ?? "—"}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {plan.hold_plan && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Hold window</div>
+            <div className="mt-1 text-sm text-slate-200">{plan.hold_plan.window ?? "—"}</div>
+            {plan.hold_plan.plain_english && (
+              <div className="mt-2 text-sm text-slate-300">{plan.hold_plan.plain_english}</div>
+            )}
+          </div>
+        )}
+
+        {plan.exit_rules && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Exit rules</div>
+            <div className="mt-2 space-y-2 text-sm">
+              <div>
+                <span className="text-slate-400">Take profit: </span>
+                <span className="text-slate-200">{plan.exit_rules.take_profit ?? "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Risk exit: </span>
+                <span className="text-slate-200">{plan.exit_rules.risk_exit ?? "—"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Time exit: </span>
+                <span className="text-slate-200">{plan.exit_rules.time_exit ?? "—"}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {plan.watchouts && plan.watchouts.length > 0 && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Watchouts</div>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-200">
+              {plan.watchouts.map((w: string, i: number) => (
+                <li key={`${w}-${i}`}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {plan.education?.terms && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Beginner terms</div>
+            <div className="mt-2 space-y-2 text-sm">
+              {Object.entries(plan.education.terms).map(([k, v]) => (
+                <div key={k}>
+                  <span className="font-semibold text-slate-200">{k}: </span>
+                  <span className="text-slate-300">{String(v)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-xs text-slate-400">Candidate contracts</div>
+            <span className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-0.5 text-[11px] text-slate-300">
+              Prototype chain lookup
+            </span>
+            <span className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-0.5 text-[11px] text-slate-300">
+              Yahoo / yfinance
+            </span>
+          </div>
+
+          {optionChainPlan?.selected_expiration && (
+            <div className="mt-2 text-xs text-slate-400">
+              Selected expiration: <span className="text-slate-200">{optionChainPlan.selected_expiration}</span>
+            </div>
+          )}
+
+          <div className="mt-2 text-xs text-slate-400">
+            These are candidate contracts for learning and prototyping, not guaranteed best execution choices.
+          </div>
+
+          <CandidateContracts optionChainPlan={optionChainPlan} />
+        </div>
+      </div>
     </details>
   )
 }
@@ -428,6 +605,8 @@ export function RunPage() {
               </div>
 
               <SentimentPill run={data} />
+
+              <TradePlanPanel run={data} />
 
               {settings.enableExplain && <ExplainPanel run={data} />}
 
