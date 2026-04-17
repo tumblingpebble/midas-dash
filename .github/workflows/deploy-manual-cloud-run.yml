@@ -92,7 +92,7 @@ jobs:
 
       - name: Smoke test context-api
         run: |
-          curl -fsS "${CONTEXT_URL}/healthz"
+          curl -fsS "${CONTEXT_URL}/openapi.json" | grep -q '"title":"MIDAS Context API"'
 
       - name: Build and push recommender-api image
         run: |
@@ -126,7 +126,7 @@ jobs:
 
       - name: Smoke test recommender-api
         run: |
-          curl -fsS "${RECOMMENDER_URL}/healthz"
+          curl -fsS "${RECOMMENDER_URL}/openapi.json" | grep -q '"title":"MIDAS Recommender API"'
 
       - name: Build and push gateway-api image
         run: |
@@ -162,7 +162,7 @@ jobs:
 
       - name: Smoke test gateway-api
         run: |
-          curl -fsS "${GATEWAY_URL}/healthz"
+          curl -fsS "${GATEWAY_URL}/openapi.json" | grep -q '"title":"MIDAS Gateway API"'
           echo
           curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | head -c 400
           echo
