@@ -1,0 +1,16 @@
+/* Media queries for responsive design: sm/md/lg */
+
+/*sm*/
+@media (max-width: 640px) {
+    .bp-badge::after { content: "sm"; }
+}
+
+/*md*/
+@media (min-width: 641px) and (max-width: 1024px) {
+    .bp-badge::after { content: "md"; }
+}
+
+/*lg*/
+@media (min-width: 1025px) {
+    .bp-badge::after { content: "lg"; }
+}
