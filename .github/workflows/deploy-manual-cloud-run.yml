@@ -13,6 +13,7 @@ permissions:
   id-token: write
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
   REGION: ${{ vars.GCP_REGION }}
   AR_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
@@ -32,7 +33,7 @@ jobs:
 
     steps:
       - name: Checkout requested ref
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.git_ref }}
 
@@ -44,9 +45,10 @@ jobs:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
+          version: '>= 363.0.0'
 
       - name: Configure Docker for Artifact Registry
         run: |
