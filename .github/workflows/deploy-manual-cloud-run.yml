@@ -19,6 +19,7 @@ env:
   AR_REPO: ${{ vars.GCP_ARTIFACT_REPO }}
   AR_HOST: us-central1-docker.pkg.dev
 
+  SENTIMENT_SERVICE: sentiment-api
   CONTEXT_SERVICE: context-api
   RECOMMENDER_SERVICE: recommender-api
   GATEWAY_SERVICE: gateway-api
@@ -60,6 +61,48 @@ jobs:
           echo "SHORT_SHA=${GITHUB_SHA::7}" >> "${GITHUB_ENV}"
           echo "IMAGE_PREFIX=${AR_HOST}/${PROJECT_ID}/${AR_REPO}" >> "${GITHUB_ENV}"
 
+      - name: Build and push sentiment-api image
+        run: |
+          docker build \
+            -f services/Dockerfile \
+            --build-arg REQ_FILE=requirements.sentiment.txt \
+            --build-arg APP_MODULE=services.sentiment_api.app:app \
+            -t "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}" \
+            .
+          docker push "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}"
+
+      - name: Deploy sentiment-api
+        run: |
+          gcloud run deploy "${SENTIMENT_SERVICE}" \
+            --image "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --platform managed \
+            --allow-unauthenticated \
+            --port 8080 \
+            --memory 2Gi \
+            --cpu 1 \
+            --timeout 300 \
+            --set-env-vars "SENT_TTL_S=90"
+
+      - name: Capture sentiment-api URL
+        shell: bash
+        run: |
+          SENT_URL="$(gcloud run services describe "${SENTIMENT_SERVICE}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          echo "SENT_URL=${SENT_URL}" >> "${GITHUB_ENV}"
+          echo "sentiment-api URL: ${SENT_URL}"
+
+      - name: Smoke test sentiment-api
+        run: |
+          curl -fsS "${SENT_URL}/openapi.json" | grep -q '"title":"MIDAS Sentiment API"'
+          curl -fsS "${SENT_URL}/api/sentiment" \
+            -H 'Content-Type: application/json' \
+            -d '{"texts":["AAPL beats earnings expectations and rallies on upgrade","Company faces investigation and bearish warning"]}' \
+            | grep -q '"engine"'
+
       - name: Build and push context-api image
         run: |
           docker build \
@@ -70,7 +113,7 @@ jobs:
             .
           docker push "${IMAGE_PREFIX}/context-api:${SHORT_SHA}"
 
-      - name: Deploy context-api
+      - name: Deploy context-api in live mode
         run: |
           gcloud run deploy "${CONTEXT_SERVICE}" \
             --image "${IMAGE_PREFIX}/context-api:${SHORT_SHA}" \
@@ -78,7 +121,9 @@ jobs:
             --project "${PROJECT_ID}" \
             --platform managed \
             --allow-unauthenticated \
-            --port 8080
+            --port 8080 \
+            --set-env-vars "LIVE_PROVIDERS=1,SENT_URL=${SENT_URL}" \
+            --update-secrets "FINNHUB_TOKEN=FINNHUB_TOKEN:1,TIINGO_TOKEN=TIINGO_TOKEN:1"
 
       - name: Capture context-api URL
         shell: bash
@@ -93,6 +138,7 @@ jobs:
       - name: Smoke test context-api
         run: |
           curl -fsS "${CONTEXT_URL}/openapi.json" | grep -q '"title":"MIDAS Context API"'
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=AAPL" | grep -q '"features"'
 
       - name: Build and push recommender-api image
         run: |
@@ -139,7 +185,6 @@ jobs:
           docker push "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}"
 
       - name: Deploy gateway-api
-        shell: bash
         run: |
           gcloud run deploy "${GATEWAY_SERVICE}" \
             --image "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}" \
@@ -163,9 +208,7 @@ jobs:
       - name: Smoke test gateway-api
         run: |
           curl -fsS "${GATEWAY_URL}/openapi.json" | grep -q '"title":"MIDAS Gateway API"'
-          echo
-          curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | head -c 400
-          echo
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | grep -q '"recommendation"'
 
       - name: Build and push web image
         run: |
@@ -195,11 +238,11 @@ jobs:
             --format='value(status.url)')"
 
           echo "Deployed:"
+          echo "  sentiment-api    ${SENT_URL}"
           echo "  context-api      ${CONTEXT_URL}"
           echo "  recommender-api  ${RECOMMENDER_URL}"
           echo "  gateway-api      ${GATEWAY_URL}"
           echo "  midas-dash-web   ${WEB_URL}"
 
           echo
-          echo "Web headers:"
           curl -I "${WEB_URL}"
