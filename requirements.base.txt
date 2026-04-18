@@ -8,3 +8,4 @@ loguru==0.7.*
 python-dotenv==1.2.*
 requests==2.*
 feedparser
+yfinance

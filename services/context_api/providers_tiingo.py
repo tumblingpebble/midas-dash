@@ -62,9 +62,24 @@ def _parse_iso_aware(s: str) -> dt.datetime:
 def fetch_quote_tiingo(ticker: str) -> Quote:
     data = _get(f"{IEX_BASE}/{ticker}", {})
     row = data[0] if isinstance(data, list) and data else (data if isinstance(data, dict) else {})
-    last = _f(row.get("last", row.get("close", row.get("tngoLast"))), 0.0)
-    bid  = _f(row.get("bidPrice", row.get("bid")), 0.0)
-    ask  = _f(row.get("askPrice", row.get("ask")), 0.0)
+
+    last_raw = row.get("last")
+    if last_raw in (None, ""):
+        last_raw = row.get("close")
+    if last_raw in (None, ""):
+        last_raw = row.get("tngoLast")
+
+    bid_raw = row.get("bidPrice")
+    if bid_raw in (None, ""):
+        bid_raw = row.get("bid")
+
+    ask_raw = row.get("askPrice")
+    if ask_raw in (None, ""):
+        ask_raw = row.get("ask")
+
+    last = _f(last_raw, 0.0)
+    bid  = _f(bid_raw, 0.0)
+    ask  = _f(ask_raw, 0.0)
 
     ts_raw = row.get("timestamp") or row.get("date") or ""
     ts_dt  = _parse_iso_aware(ts_raw)
