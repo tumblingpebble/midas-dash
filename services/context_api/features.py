@@ -152,13 +152,23 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
         quote_ti = fetch_quote_tiingo(ticker)
         candles  = fetch_candles_tiingo(ticker, lookback_minutes=120, freq="1min")
 
+        quote_ts = quote_ti.get("ts")
         last_px = float(quote_ti.get("last") or 0.0)
-        if last_px == 0.0 and candles:
+        last_source = "unknown"
+        quality = "unknown"
+
+        if last_px > 0.0:
+            last_source = "tiingo_quote"
+            quality = "real"
+        elif candles:
             last_px = float(candles[-1]["close"])
+            if last_px > 0.0:
+                last_source = "tiingo_candle"
+                quality = "derived"
 
         bid_disp = float(quote_ti.get("bid") or 0.0) or None
         ask_disp = float(quote_ti.get("ask") or 0.0) or None
-        quality = "real" if (bid_disp is not None and ask_disp is not None and last_px > 0) else "unknown"
+        spread_quality = "real" if (bid_disp is not None and ask_disp is not None and ask_disp > bid_disp) else "unknown"
 
         # Fallback: Finnhub last if Tiingo last missing
         if last_px <= 0.0:
@@ -166,9 +176,15 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
                 qfh = fetch_quote_finnhub(ticker)
                 if qfh.get("last"):
                     last_px = float(qfh["last"])
+                    last_source = "finnhub_quote"
+                    quality = "derived"
             except Exception:
                 pass
-        if last_px <= 0.0: last_px = 1.0
+
+        if last_px <= 0.0:
+            last_px = 1.0
+            last_source = "fallback_default"
+            quality = "unknown"
 
         _note_quote(ticker, last_px)
 
@@ -178,7 +194,7 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
             half = (spread_bps_est / 1e4) * last_px * 0.5
             bid_disp = float(last_px - half)
             ask_disp = float(last_px + half)
-            quality = "estimated"
+            spread_quality = "estimated"
 
         # ----- mins since news (cap 240)
         mins_since_news = 9999
@@ -250,7 +266,15 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
             "refs": refs,                   # <= up to 3 (padded to length 3 with None)
             "refs_sources": refs_sources,   # <= publishers list for tooltip if needed
             "error": error,
-            "quote": {"last": float(last_px), "bid": float(bid_disp), "ask": float(ask_disp), "quality": quality},
+            "quote": {
+                "last": float(last_px),
+                "bid": float(bid_disp),
+                "ask": float(ask_disp),
+                "quality": quality,
+                "spread_quality": spread_quality,
+                "last_source": last_source,
+                "ts": quote_ts,
+            },
             "ts": iso_now(),
         }
         put_cached(ticker, payload)

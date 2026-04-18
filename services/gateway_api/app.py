@@ -1,9 +1,12 @@
+#services/gateway_api/app.py
 from __future__ import annotations
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import os, httpx, time
 from datetime import datetime, timezone
+from .trade_plan import build_trade_plan
+from .options_chain_yahoo import get_option_chain_candidates
 
 CTX_URL = os.getenv("CTX_URL", "http://127.0.0.1:8012")
 REC_URL = os.getenv("REC_URL", "http://127.0.0.1:8014")
@@ -92,7 +95,38 @@ def run(
         except HTTPException:
             explain_payload = {"error": "explain unavailable"}
 
-    # 3) one-liner build
+    # 3) option-chain prototype candidates (Yahoo / yfinance)
+    option_chain_plan: Optional[Dict[str, Any]] = None
+    try:
+        rec_class = str(rec.get("class", "NO_ACTION"))
+        last_px = float((quote or {}).get("last") or 0.0)
+
+        if rec_class != "NO_ACTION" and last_px > 0.0:
+            option_chain_plan = get_option_chain_candidates(
+                ticker=t,
+                spot=last_px,
+                strategy_family=rec_class,
+            )
+    except Exception as e:
+        option_chain_plan = {
+            "provider": "yfinance",
+            "available": False,
+            "reason": f"option chain lookup failed: {e}",
+            "expirations": [],
+            "selected_expiration": None,
+            "candidates": [],
+        }
+
+    # 4) rules-based trade plan + beginner guidance
+    trade_plan = build_trade_plan(
+        ticker=t,
+        features=features,
+        recommendation=rec,
+        quote=quote,
+        option_chain_plan=option_chain_plan,
+    )
+    
+    # 5) one-liner build
     headline = top_headline or {"title": "", "publisher": "", "url": ""}
     try:
         one = _post_json(f"{CTX_URL}/api/one_liner", {
@@ -106,7 +140,7 @@ def run(
     except HTTPException:
         one = {"text": f"{rec.get('class','NO_ACTION')} · {int(rec.get('confidence',0)*100)}% confidence"}
 
-    # 4) cache age
+    # 6) cache age
     now = datetime.now(timezone.utc)
     tctx = _parse_iso(ts_ctx) if isinstance(ts_ctx, str) else None
     age_s = int((now - tctx).total_seconds()) if tctx else None
@@ -123,6 +157,7 @@ def run(
         "ts_ctx": ts_ctx,
         "ts_gateway": iso_now(),
         "cache_age_seconds": age_s,
+        "trade_plan": trade_plan,
     }
 
     if feature_note:
