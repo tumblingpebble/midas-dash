@@ -352,6 +352,22 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
           </div>
         )}
 
+        {plan.watch_trigger && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">What to wait for</div>
+            <div className="mt-1 text-sm text-slate-200">
+              {plan.watch_trigger.plain_english ?? "—"}
+            </div>
+            {plan.watch_trigger.examples && plan.watch_trigger.examples.length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-300">
+                {plan.watch_trigger.examples.map((x, i) => (
+                  <li key={`${x}-${i}`}>{x}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {plan.range_view && (
           <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Expected range</div>
@@ -361,6 +377,31 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
             <div className="mt-2 text-xs text-slate-400">
               Lower bound: <span className="text-slate-200">{plan.range_view.lower_bound}</span>{" "}
               • Upper bound: <span className="text-slate-200">{plan.range_view.upper_bound}</span>
+            </div>
+          </div>
+        )}
+
+        {plan.target_zone && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Target zone</div>
+            <div className="mt-1 text-sm text-slate-200">
+              {plan.target_zone.plain_english}
+            </div>
+            <div className="mt-2 text-xs text-slate-400">
+              Lower bound: <span className="text-slate-200">{plan.target_zone.lower_bound}</span>{" "}
+              • Upper bound: <span className="text-slate-200">{plan.target_zone.upper_bound}</span>
+            </div>
+          </div>
+        )}
+
+        {plan.upside_cap && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Upside cap</div>
+            <div className="mt-1 text-sm text-slate-200">
+              {plan.upside_cap.plain_english}
+            </div>
+            <div className="mt-2 text-xs text-slate-400">
+              Cap area: <span className="text-slate-200">{plan.upside_cap.upper_bound}</span>
             </div>
           </div>
         )}
