@@ -41,6 +41,27 @@ export type TradePlan = {
     strike_style?: string
     strike_label?: string
   }
+  watch_trigger?: {
+    plain_english?: string
+    examples?: string[]
+  }
+  range_view?: {
+    lower_bound?: number
+    upper_bound?: number
+    plain_english?: string
+    derived_from?: string
+  }
+  target_zone?: {
+    lower_bound?: number
+    upper_bound?: number
+    plain_english?: string
+    derived_from?: string
+  }
+  upside_cap?: {
+    upper_bound?: number
+    plain_english?: string
+    derived_from?: string
+  }
   hold_plan?: {
     window?: string
     plain_english?: string

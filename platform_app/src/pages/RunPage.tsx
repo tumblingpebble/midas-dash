@@ -352,17 +352,34 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
           </div>
         )}
 
+        {plan.range_view && (
+          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+            <div className="text-xs text-slate-400">Expected range</div>
+            <div className="mt-1 text-sm text-slate-200">
+              {plan.range_view.plain_english}
+            </div>
+            <div className="mt-2 text-xs text-slate-400">
+              Lower bound: <span className="text-slate-200">{plan.range_view.lower_bound}</span>{" "}
+              • Upper bound: <span className="text-slate-200">{plan.range_view.upper_bound}</span>
+            </div>
+          </div>
+        )}
+
         {plan.option_template && (
           <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Option template</div>
             <div className="mt-2 grid gap-3 md:grid-cols-2 text-sm">
               <div>
                 <div className="text-slate-400">Expiration</div>
-                <div className="text-slate-200">{plan.option_template.dte_label ?? plan.option_template.dte_target ?? "—"}</div>
+                <div className="text-slate-200">
+                  {plan.option_template.dte_label ?? plan.option_template.dte_target ?? "—"}
+                </div>
               </div>
               <div>
                 <div className="text-slate-400">Strike style</div>
-                <div className="text-slate-200">{plan.option_template.strike_label ?? plan.option_template.strike_style ?? "—"}</div>
+                <div className="text-slate-200">
+                  {plan.option_template.strike_label ?? plan.option_template.strike_style ?? "—"}
+                </div>
               </div>
             </div>
           </div>
