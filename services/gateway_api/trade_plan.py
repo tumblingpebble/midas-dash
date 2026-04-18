@@ -14,6 +14,92 @@ TERM_DEFS = {
 }
 
 
+def _extract_candidate(option_chain_plan: Optional[Dict[str, Any]], role: str) -> Optional[Dict[str, Any]]:
+    if not option_chain_plan:
+        return None
+    candidates = option_chain_plan.get("candidates") or []
+    return next((c for c in candidates if c.get("role") == role), None)
+
+
+def _extract_iron_condor_range(option_chain_plan: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    short_call = _extract_candidate(option_chain_plan, "short_call")
+    short_put = _extract_candidate(option_chain_plan, "short_put")
+
+    if not short_call or not short_put:
+        return None
+
+    upper = short_call.get("strike")
+    lower = short_put.get("strike")
+
+    if upper is None or lower is None:
+        return None
+
+    return {
+        "lower_bound": float(lower),
+        "upper_bound": float(upper),
+        "plain_english": f"This setup works best if the stock stays roughly between {float(lower):.2f} and {float(upper):.2f} through expiration.",
+        "derived_from": "short strikes",
+    }
+
+
+def _extract_debit_call_zone(option_chain_plan: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    long_leg = _extract_candidate(option_chain_plan, "long_leg")
+    short_leg = _extract_candidate(option_chain_plan, "short_leg")
+
+    if not long_leg or not short_leg:
+        return None
+
+    lower = long_leg.get("strike")
+    upper = short_leg.get("strike")
+
+    if lower is None or upper is None:
+        return None
+
+    return {
+        "lower_bound": float(lower),
+        "upper_bound": float(upper),
+        "plain_english": f"This bullish spread starts becoming more useful above roughly {float(lower):.2f} and reaches its main target zone closer to {float(upper):.2f}.",
+        "derived_from": "long and short call strikes",
+    }
+
+
+def _extract_debit_put_zone(option_chain_plan: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    long_leg = _extract_candidate(option_chain_plan, "long_leg")
+    short_leg = _extract_candidate(option_chain_plan, "short_leg")
+
+    if not long_leg or not short_leg:
+        return None
+
+    upper = long_leg.get("strike")
+    lower = short_leg.get("strike")
+
+    if upper is None or lower is None:
+        return None
+
+    return {
+        "lower_bound": float(lower),
+        "upper_bound": float(upper),
+        "plain_english": f"This bearish spread becomes more useful as price moves down below roughly {float(upper):.2f} and reaches its main target zone closer to {float(lower):.2f}.",
+        "derived_from": "long and short put strikes",
+    }
+
+
+def _extract_covered_call_cap(option_chain_plan: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    short_leg = _extract_candidate(option_chain_plan, "short_leg")
+    if not short_leg:
+        return None
+
+    cap = short_leg.get("strike")
+    if cap is None:
+        return None
+
+    return {
+        "upper_bound": float(cap),
+        "plain_english": f"This covered call keeps the stock position bullish to neutral, but upside is effectively capped around {float(cap):.2f} if the shares rise through the short call strike.",
+        "derived_from": "short call strike",
+    }
+
+
 def _confidence_bucket(conf: float) -> str:
     if conf >= 0.85:
         return "high"
@@ -89,6 +175,14 @@ def build_trade_plan(
             "entry_plan": {
                 "plain_english": "Do not force a trade. Wait for stronger momentum, fresher confirmation, or a clearer signal."
             },
+            "watch_trigger": {
+                "plain_english": "Wait for the setup to become more directional or clearer before taking action.",
+                "examples": [
+                    "stronger short-term move in r_1m or r_5m",
+                    "fresh relevant headlines",
+                    "signal upgrade from NO_ACTION to a directional setup",
+                ],
+            },
             "hold_plan": {
                 "window": "No active hold window",
                 "plain_english": "This is a wait state, not an entry signal."
@@ -126,6 +220,10 @@ def build_trade_plan(
             },
         })
 
+        target_zone = _extract_debit_call_zone(option_chain_plan)
+        if target_zone:
+            base["target_zone"] = target_zone
+
     elif strategy == "DEBIT_PUT":
         base.update({
             "instrument": "option_spread",
@@ -150,6 +248,10 @@ def build_trade_plan(
                 "time_exit": "Avoid sitting too close to expiration if the move stalls."
             },
         })
+
+        target_zone = _extract_debit_put_zone(option_chain_plan)
+        if target_zone:
+            base["target_zone"] = target_zone
 
     elif strategy == "COVERED_CALL":
         base.update({
@@ -176,13 +278,17 @@ def build_trade_plan(
             },
         })
 
+        upside_cap = _extract_covered_call_cap(option_chain_plan)
+        if upside_cap:
+            base["upside_cap"] = upside_cap
+
     elif strategy == "IRON_CONDOR":
         base.update({
             "instrument": "multi_leg_option",
             "instrument_label": "Iron condor",
             "summary": "This setup is for a stock expected to stay in a range, using defined-risk premium selling.",
             "entry_plan": {
-                "plain_english": "This is more advanced and fits better when the signal suggests range-bound conditions instead of directional momentum."
+                "plain_english": "This is a neutral strategy for times when the stock looks more likely to stay in a band than make a strong move up or down. The goal is to benefit if price remains inside the expected range rather than trending hard in one direction."
             },
             "option_template": {
                 "dte_target": "14-30",
@@ -196,10 +302,14 @@ def build_trade_plan(
             },
             "exit_rules": {
                 "take_profit": "Take gains once enough premium decays instead of holding for the very last dollar.",
-                "risk_exit": "Exit if the stock breaks out of the expected range.",
+                "risk_exit": "Exit if the stock starts breaking above the short call area or below the short put area, because that means price is leaving the expected range.",
                 "time_exit": "Avoid staying too close to expiration if the stock is pressing one side."
             },
         })
+
+        range_view = _extract_iron_condor_range(option_chain_plan)
+        if range_view:
+            base["range_view"] = range_view
 
     if option_chain_plan:
         base["option_chain_plan"] = option_chain_plan
