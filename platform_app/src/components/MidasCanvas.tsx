@@ -23,7 +23,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     const el = wrapRef.current
     if (!el) return
     const ro = new ResizeObserver(() => {
-      const next = Math.max(320, Math.floor(el.clientWidth))
+      const next = Math.floor(el.clientWidth)
       setW(next)
     })
     ro.observe(el)
