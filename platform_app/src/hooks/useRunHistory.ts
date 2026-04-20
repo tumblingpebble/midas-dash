@@ -11,6 +11,7 @@ export type RunHistoryItem = {
   headlineUrl?: string
   oneLiner?: string
   refsNumbers?: Array<{ n: number; url: string }>
+  snapshot: MidasRunResponse
 }
 
 const KEY = "midas_dash_history_v1"
@@ -20,7 +21,18 @@ function safeParse(raw: string | null): RunHistoryItem[] {
   if (!raw) return []
   try {
     const x = JSON.parse(raw)
-    return Array.isArray(x) ? (x as RunHistoryItem[]) : []
+    if (!Array.isArray(x)) return []
+
+    return x.filter((item) => {
+      return (
+        item &&
+        typeof item === "object" &&
+        typeof item.id === "string" &&
+        typeof item.ticker === "string" &&
+        item.snapshot &&
+        typeof item.snapshot === "object"
+      )
+    }) as RunHistoryItem[]
   } catch {
     return []
   }
@@ -38,6 +50,7 @@ export function toHistoryItem(run: MidasRunResponse): RunHistoryItem {
     headlineUrl: run.top_headline?.url,
     oneLiner: run.one_liner?.text,
     refsNumbers: run.one_liner?.refs_numbers ?? [],
+    snapshot: run,
   }
 }
 

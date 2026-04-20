@@ -1,10 +1,19 @@
+import { useNavigate } from "react-router-dom"
 import { useRunHistory } from "../hooks/useRunHistory"
+
+const LS_LAST_RUN = "midas_dash_last_run_v1"
 
 const stripBracketRefs = (text: string) =>
   text.replace(/\(\[[0-9]+\](\[[0-9]+\])*\)/g, "").trim()
 
 export function HistoryPage() {
   const history = useRunHistory()
+  const navigate = useNavigate()
+
+  function openSnapshot(raw: unknown) {
+    localStorage.setItem(LS_LAST_RUN, JSON.stringify(raw))
+    navigate("/")
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6">
@@ -39,35 +48,52 @@ export function HistoryPage() {
 
               {it.oneLiner && (
                 <div className="mt-2 text-sm text-slate-200">
-                    {stripBracketRefs(it.oneLiner)}
+                  {stripBracketRefs(it.oneLiner)}
                 </div>
-                )}
-              
-              {it.refsNumbers && it.refsNumbers.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                    {it.refsNumbers.map((r) => (
-                        <a
-                            key={`${it.id}-${r.n}`}
-                            href={r.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-orange-200 hover:border-slate-600"
-                            >
-                                [{r.n}]
-                            </a>
-                    ))}
-                    </div>
               )}
 
-              {it.headlineUrl && (
-                <a
-                  href={it.headlineUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 block text-sm text-orange-200 hover:underline"
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => openSnapshot(it.snapshot)}
+                  className="rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400"
                 >
-                  {it.headlineTitle ?? it.headlineUrl}
-                </a>
+                  Open snapshot
+                </button>
+
+                {it.headlineUrl && (
+                  <a
+                    href={it.headlineUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-orange-200 hover:border-slate-600"
+                  >
+                    Open headline
+                  </a>
+                )}
+              </div>
+
+              {it.refsNumbers && it.refsNumbers.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {it.refsNumbers.map((r) => (
+                    <a
+                      key={`${it.id}-${r.n}`}
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-orange-200 hover:border-slate-600"
+                    >
+                      [{r.n}]
+                    </a>
+                  ))}
+                </div>
+              )}
+
+              {it.headlineUrl && !it.headlineTitle && (
+                <div className="mt-2 text-xs text-slate-500">{it.headlineUrl}</div>
+              )}
+
+              {it.headlineTitle && (
+                <div className="mt-2 text-sm text-slate-300">{it.headlineTitle}</div>
               )}
             </div>
           ))}
