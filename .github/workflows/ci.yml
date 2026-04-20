@@ -116,3 +116,43 @@ jobs:
             --severity HIGH,CRITICAL \
             --exit-code 1 \
             midas-dash-midas_dash:latest
+
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sbom:
+    runs-on: ubuntu-latest
+    needs: [trivy-scan]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build images
+        run: |
+          docker compose build
+
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Generate SBOMs
+        run: |
+          mkdir -p sbom
+
+          syft midas-dash-gateway_api:latest -o cyclonedx-json > sbom/gateway_api.sbom.json
+          syft midas-dash-context_api:latest -o cyclonedx-json > sbom/context_api.sbom.json
+          syft midas-dash-recommender_api:latest -o cyclonedx-json > sbom/recommender_api.sbom.json
+          syft midas-dash-sentiment_api:latest -o cyclonedx-json > sbom/sentiment_api.sbom.json
+          syft midas-dash-midas_dash:latest -o cyclonedx-json > sbom/midas_dash_web.sbom.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: midas-dash-sboms
+          path: sbom/*.json
