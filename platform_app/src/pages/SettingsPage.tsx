@@ -49,6 +49,57 @@ export function SettingsPage() {
             will target the cloud gateway URL.
           </p>
         </section>
+
+        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-2">
+          <div className="text-sm font-semibold text-slate-200">Status / About</div>
+          <div className="mt-2 grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Frontend
+              </div>
+              <div className="mt-1 text-sm text-slate-200">
+                React + TypeScript + Vite + Tailwind CSS
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Backend
+              </div>
+              <div className="mt-1 text-sm text-slate-200">
+                FastAPI microservices: context, recommender, gateway, sentiment
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                DevOps
+              </div>
+              <div className="mt-1 text-sm text-slate-200">
+                Docker Compose, GitHub Actions CI, Trivy scans, gitleaks, SBOM artifacts
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Cloud
+              </div>
+              <div className="mt-1 text-sm text-slate-200">
+                Artifact Registry + Cloud Run + OIDC / Workload Identity Federation
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-800 bg-slate-950 p-3 md:col-span-2">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                History behavior
+              </div>
+              <div className="mt-1 text-sm text-slate-200">
+                Run history now stores full snapshots so previous analyses can be reopened from the
+                History page.
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   )
