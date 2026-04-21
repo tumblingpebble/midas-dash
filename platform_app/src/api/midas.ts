@@ -103,9 +103,9 @@ export type MidasRunResponse = {
     refs_numbers?: Array<{ n: number; url: string }>
   }
   quote?: {
-    last?: number
-    bid?: number
-    ask?: number
+    last?: number | null
+    bid?: number | null
+    ask?: number | null
     quality?: string
     spread_quality?: string
     last_source?: string

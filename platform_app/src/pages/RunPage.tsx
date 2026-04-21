@@ -66,6 +66,34 @@ function stripBracketRefs(text: string): string {
   return text.replace(/\(\[[0-9]+\](\[[0-9]+\])*\)/g, "").trim()
 }
 
+function validLast(run: MidasRunResponse): number | null {
+  const last = Number(run.quote?.last ?? 0)
+  if (!Number.isFinite(last) || last <= 0) return null
+  return last
+}
+
+function headlineItems(run: MidasRunResponse) {
+  const refs = (run.refs ?? []).filter(Boolean) as Array<{
+    title?: string
+    publisher?: string
+    url?: string
+  }>
+
+  if (refs.length > 0) return refs
+
+  if (run.top_headline?.url) {
+    return [
+      {
+        title: run.top_headline.title,
+        publisher: run.top_headline.publisher,
+        url: run.top_headline.url,
+      },
+    ]
+  }
+
+  return []
+}
+
 function RefLinks({ run }: { run: MidasRunResponse }) {
   const refs = run.one_liner?.refs_numbers ?? []
   if (!refs.length) return null
@@ -606,6 +634,13 @@ export function RunPage() {
             <div className="mt-3 space-y-3">
               <ContextBanner run={data} nowMs={nowMs} />
 
+              {data.features_note && (
+                <div className="rounded-xl border border-amber-800 bg-amber-950/50 px-3 py-3 text-sm text-amber-200">
+                  <div className="font-semibold">Data warning</div>
+                  <div className="mt-1">{data.features_note}</div>
+                </div>
+              )}
+
               <div className="rounded-xl bg-slate-950 px-3 py-3">
                 <div className="text-xs text-slate-400">One-liner</div>
                 <div className="mt-1 text-sm text-slate-100">
@@ -618,7 +653,7 @@ export function RunPage() {
                 <MidasCanvas run={data} />
               </div>
 
-              {data.top_headline?.url && (
+              {headlineItems(data).length === 0 && data.top_headline?.url && (
                 <a
                   href={data.top_headline.url}
                   target="_blank"
@@ -636,6 +671,30 @@ export function RunPage() {
                 </a>
               )}
 
+              {headlineItems(data).length > 0 && (
+                <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
+                  <div className="text-xs text-slate-400">Top headlines</div>
+                  <div className="mt-2 space-y-3">
+                    {headlineItems(data).slice(0, 3).map((h, idx) => (
+                      <a
+                        key={`${h.url ?? "headline"}-${idx}`}
+                        href={h.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block rounded-lg border border-slate-800 bg-slate-900 px-3 py-3 hover:border-slate-600"
+                      >
+                        <div className="text-sm text-orange-200">
+                          {h.title ?? h.url ?? "Untitled headline"}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          {h.publisher ?? "Source"}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid gap-3 lg:grid-cols-2">
                 <div className="rounded-xl bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Recommendation</div>
@@ -650,15 +709,31 @@ export function RunPage() {
                 <div className="rounded-xl bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Quote</div>
                   <div className="mt-1 text-sm">
-                    Last: {data.quote?.last ?? "—"}{" "}
-                    <span className="text-slate-400">
-                      ({data.quote?.quality ?? "unknown"}
-                      {data.quote?.spread_quality
-                        ? ` / spread: ${data.quote.spread_quality}`
-                        : ""}
-                      )
-                    </span>
+                    {validLast(data) !== null ? (
+                      <>
+                        Last: {validLast(data)?.toFixed(2)}{" "}
+                        <span className="text-slate-400">
+                          ({data.quote?.quality ?? "unknown"}
+                          {data.quote?.spread_quality
+                            ? ` / spread: ${data.quote.spread_quality}`
+                            : ""}
+                          )
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-amber-200">Last unavailable</span>{" "}
+                        <span className="text-slate-400">
+                          ({data.quote?.quality ?? "unknown"})
+                        </span>
+                      </>
+                    )}
                   </div>
+                  {data.quote?.last_source && data.quote.last_source !== "unknown" && (
+                    <div className="mt-1 text-xs text-slate-500">
+                      Source: {data.quote.last_source}
+                    </div>
+                  )}
                 </div>
               </div>
 
