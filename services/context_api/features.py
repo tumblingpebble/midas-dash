@@ -100,8 +100,6 @@ def _merge_refs(ticker: str, fn: List[dict], yh: List[dict]) -> List[dict]:
 
 def build_features_for(ticker: str) -> Dict[str, Any]:
     live = os.getenv("LIVE_PROVIDERS") == "1"
-    error: Optional[str] = None
-    top_headline: Optional[dict] = None
 
     if live:
         cached = get_cached(ticker)
@@ -111,188 +109,255 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
         feats = _synthetic_feats()
         payload = {
             "features": feats,
-            "top_headline": top_headline,
-            "refs": [],
+            "top_headline": None,
+            "refs": [None, None, None],
             "refs_sources": [],
-            "error": error,
-            "quote": {"last": 0.0, "bid": None, "ask": None, "quality": "unknown"},
+            "error": None,
+            "quote": {
+                "last": 0.0,
+                "bid": None,
+                "ask": None,
+                "quality": "unknown",
+                "spread_quality": "unknown",
+                "last_source": "unknown",
+                "ts": None,
+            },
             "ts": iso_now(),
         }
         return payload
 
+    warnings: List[str] = []
+    top_headline: Optional[dict] = None
+    refs: List[Optional[dict]] = [None, None, None]
+    refs_sources: List[str] = []
+
+    # default quote state
+    quote_ts = None
+    last_px = 0.0
+    last_source = "unknown"
+    quality = "unknown"
+    bid_disp = None
+    ask_disp = None
+    spread_quality = "unknown"
+
+    # default features state
+    sent_mean = 0.0
+    sent_std = 0.05
+    r_1m = 0.0
+    r_5m = 0.0
+    rv20 = 0.02
+    above = False
+    earnings_soon = False
+    liquidity_flag = True
+    mins_since_news = 240
+
+    fh: List[dict] = []
+    yh: List[dict] = []
+    candles: List[dict] = []
+
+    # ----- Headlines
     try:
-        # ----- Headlines: Finnhub -> Yahoo fallback; then merge to refs
-        fh: List[dict] = []
-        yh: List[dict] = []
-        try:
-            fh = fetch_headlines(ticker, limit=5)
-        except FHError as e:
-            error = f"news: {e}"
-        try:
-            yh = fetch_headlines_yahoo(ticker, limit=5)
-        except Exception as e:
-            error = (error + f"; yahoo: {e}") if error else f"yahoo: {e}"
+        fh = fetch_headlines(ticker, limit=5)
+    except FHError as e:
+        warnings.append(f"finnhub headlines: {e}")
 
-        # choose top for legacy field
-        if fh:
-            top_headline = fh[0]
-        elif yh:
-            top_headline = yh[0]
+    try:
+        yh = fetch_headlines_yahoo(ticker, limit=5)
+    except Exception as e:
+        warnings.append(f"yahoo headlines: {e}")
 
-        refs = _merge_refs(ticker, fh, yh)
-        refs_sources = [r["publisher"] for r in refs]
-        # pad to length 3 with None for stable indexing
-        while len(refs) < 3:
-            refs.append(None)
+    if fh:
+        top_headline = fh[0]
+    elif yh:
+        top_headline = yh[0]
 
-        # ----- Sentiment
-        sent_mean, sent_std = _sent_from_headlines([r for r in (fh or [])[:3] if r] or [r for r in (yh or [])[:3] if r])
+    merged_refs = _merge_refs(ticker, fh, yh)
+    refs_sources = [r["publisher"] for r in merged_refs]
+    refs = list(merged_refs)
+    while len(refs) < 3:
+        refs.append(None)
 
-        # ----- Quotes + Candles (Tiingo primary)
+    # ----- Sentiment
+    try:
+        sent_pool = [r for r in (fh or [])[:3] if r] or [r for r in (yh or [])[:3] if r]
+        sent_mean, sent_std = _sent_from_headlines(sent_pool)
+    except Exception as e:
+        warnings.append(f"sentiment: {e}")
+        sent_mean, sent_std = 0.0, 0.05
+
+    # ----- Tiingo quote
+    try:
         quote_ti = fetch_quote_tiingo(ticker)
-        candles  = fetch_candles_tiingo(ticker, lookback_minutes=120, freq="1min")
-
         quote_ts = quote_ti.get("ts")
-        last_px = float(quote_ti.get("last") or 0.0)
-        last_source = "unknown"
-        quality = "unknown"
+        ti_last = float(quote_ti.get("last") or 0.0)
 
-        if last_px > 0.0:
+        if ti_last > 0.0:
+            last_px = ti_last
             last_source = "tiingo_quote"
             quality = "real"
-        elif candles:
-            last_px = float(candles[-1]["close"])
-            if last_px > 0.0:
-                last_source = "tiingo_candle"
-                quality = "derived"
 
         bid_disp = float(quote_ti.get("bid") or 0.0) or None
         ask_disp = float(quote_ti.get("ask") or 0.0) or None
-        spread_quality = "real" if (bid_disp is not None and ask_disp is not None and ask_disp > bid_disp) else "unknown"
+        if bid_disp is not None and ask_disp is not None and ask_disp > bid_disp:
+            spread_quality = "real"
+    except TiError as e:
+        warnings.append(f"tiingo quote: {e}")
+    except Exception as e:
+        warnings.append(f"tiingo quote unexpected: {e!r}")
 
-        # Fallback: Finnhub last if Tiingo last missing
-        if last_px <= 0.0:
-            try:
-                qfh = fetch_quote_finnhub(ticker)
-                if qfh.get("last"):
-                    last_px = float(qfh["last"])
-                    last_source = "finnhub_quote"
-                    quality = "derived"
-            except Exception:
-                pass
+    # ----- Tiingo candles
+    try:
+        candles = fetch_candles_tiingo(ticker, lookback_minutes=120, freq="1min")
+        if last_px <= 0.0 and candles:
+            cand_last = float(candles[-1]["close"])
+            if cand_last > 0.0:
+                last_px = cand_last
+                last_source = "tiingo_candle"
+                quality = "derived"
+    except TiError as e:
+        warnings.append(f"tiingo candles: {e}")
+        candles = []
+    except Exception as e:
+        warnings.append(f"tiingo candles unexpected: {e!r}")
+        candles = []
 
-        if last_px <= 0.0:
-            last_px = 1.0
-            last_source = "fallback_default"
-            quality = "unknown"
+    # ----- Finnhub quote fallback
+    if last_px <= 0.0:
+        try:
+            qfh = fetch_quote_finnhub(ticker)
+            if qfh.get("last"):
+                last_px = float(qfh["last"])
+                last_source = "finnhub_quote"
+                quality = "derived"
+        except Exception as e:
+            warnings.append(f"finnhub quote fallback: {e!r}")
 
+    # ----- quote ring
+    if last_px > 0.0:
         _note_quote(ticker, last_px)
 
-        # If B/A still missing or invalid, estimate tight spread (~8 bps)
-        if bid_disp is None or ask_disp is None or (ask_disp is not None and bid_disp is not None and ask_disp <= bid_disp):
-            spread_bps_est = 8.0
-            half = (spread_bps_est / 1e4) * last_px * 0.5
-            bid_disp = float(last_px - half)
-            ask_disp = float(last_px + half)
-            spread_quality = "estimated"
+    # ----- estimated spread fallback only if we have a last price
+    if last_px > 0.0 and (
+        bid_disp is None or ask_disp is None or (ask_disp is not None and bid_disp is not None and ask_disp <= bid_disp)
+    ):
+        spread_bps_est = 8.0
+        half = (spread_bps_est / 1e4) * last_px * 0.5
+        bid_disp = float(last_px - half)
+        ask_disp = float(last_px + half)
+        spread_quality = "estimated"
 
-        # ----- mins since news (cap 240)
-        mins_since_news = 9999
-        if fh or yh:
-            pool = (fh or []) + (yh or [])
-            pool = [p for p in pool if p.get("ts")]
-            if pool:
+    # ----- mins since news
+    if fh or yh:
+        pool = (fh or []) + (yh or [])
+        pool = [p for p in pool if p.get("ts")]
+        if pool:
+            try:
                 latest = max(_parse_iso_aware(p["ts"]) for p in pool)
                 mins_since_news = int((datetime.now(timezone.utc) - latest).total_seconds() // 60)
-        mins_since_news = min(int(mins_since_news), 240)
+            except Exception as e:
+                warnings.append(f"headline age: {e!r}")
+    mins_since_news = min(int(mins_since_news), 240)
 
-        # ----- Returns & rv20 with padding
+    # ----- returns + volatility
+    try:
         if candles and len(candles) >= 2:
             closes = [c["close"] for c in candles]
-            highs  = [c["high"]  for c in candles]
-            lows   = [c["low"]   for c in candles]
+            highs = [c["high"] for c in candles]
+            lows = [c["low"] for c in candles]
+
             r_1m = ret_pct(closes, 1) if len(closes) >= 2 else _ret_from_ring(ticker, 1)
             r_5m = ret_pct(closes, 5) if len(closes) >= 6 else _ret_from_ring(ticker, 5)
+
             def _pad(series: list[float], n: int, pad_val: float) -> list[float]:
                 return series + [pad_val] * max(0, n - len(series))
+
             series = closes[-120:] if closes else []
             if len(series) < 21:
-                pad_val = series[-1] if series else last_px
+                pad_val = series[-1] if series else (last_px if last_px > 0.0 else 1.0)
                 series = _pad(series, 21, pad_val)
             else:
                 pad_val = series[-1]
+
             hseg = (highs or [pad_val])[-len(series):]
-            lseg = (lows  or [pad_val])[-len(series):]
+            lseg = (lows or [pad_val])[-len(series):]
             rv20 = atr_normalized(hseg, lseg, series, 20)
             above = bool(series[-1] > sum(series[-20:]) / 20.0)
         else:
             r_1m = _ret_from_ring(ticker, 1)
             r_5m = _ret_from_ring(ticker, 5)
-            rv20  = atr_normalized([last_px]*21, [last_px]*21, [last_px]*21, 20)
+            base_px = last_px if last_px > 0.0 else 1.0
+            rv20 = atr_normalized([base_px] * 21, [base_px] * 21, [base_px] * 21, 20)
             above = False
+    except Exception as e:
+        warnings.append(f"indicators: {e!r}")
+        synth = _synthetic_feats()
+        r_1m = float(synth["r_1m"])
+        r_5m = float(synth["r_5m"])
+        rv20 = float(synth["rv20"])
+        above = bool(synth["above_sma20"])
 
-        rv20 = float(min(max(rv20, 0.02), 0.80))
+    rv20 = float(min(max(rv20, 0.02), 0.80))
 
-        # ----- Earnings soon (≤14 days)
-        earnings_soon = False
-        try:
-            earn_iso = fetch_earnings_finnhub(ticker)
-            if earn_iso:
-                ed = _parse_iso_aware(earn_iso).date()
-                today = datetime.now(timezone.utc).date()
-                earnings_soon = 0 <= (ed - today).days <= 14
-        except FHError:
-            pass
+    # ----- earnings soon
+    try:
+        earn_iso = fetch_earnings_finnhub(ticker)
+        if earn_iso:
+            ed = _parse_iso_aware(earn_iso).date()
+            today = datetime.now(timezone.utc).date()
+            earnings_soon = 0 <= (ed - today).days <= 14
+    except FHError as e:
+        warnings.append(f"earnings: {e}")
+    except Exception as e:
+        warnings.append(f"earnings unexpected: {e!r}")
 
-        # ----- Liquidity (IEX-friendly)
-        spread_bps = abs(ask_disp - bid_disp) / last_px * 1e4 if last_px else 9999
+    # ----- liquidity
+    try:
+        if last_px > 0.0 and bid_disp is not None and ask_disp is not None:
+            spread_bps = abs(ask_disp - bid_disp) / last_px * 1e4
+        else:
+            spread_bps = 9999
         vol_1m = int(candles[-1]["volume"]) if candles else 0
         vol_5m = sum(int(c["volume"]) for c in (candles[-5:] if candles else []))
         liquidity_flag = (spread_bps <= 30.0) or (vol_1m >= 1_000) or (vol_5m >= 5_000)
-
-        feats = {
-            "sent_mean": float(sent_mean), "sent_std": float(sent_std),
-            "r_1m": float(r_1m), "r_5m": float(r_5m),
-            "above_sma20": bool(above),
-            "mins_since_news": int(mins_since_news),
-            "rv20": float(rv20),
-            "earnings_soon": bool(earnings_soon),
-            "liquidity_flag": bool(liquidity_flag),
-        }
-
-        payload = {
-            "features": feats,
-            "top_headline": top_headline,
-            "refs": refs,                   # <= up to 3 (padded to length 3 with None)
-            "refs_sources": refs_sources,   # <= publishers list for tooltip if needed
-            "error": error,
-            "quote": {
-                "last": float(last_px),
-                "bid": float(bid_disp),
-                "ask": float(ask_disp),
-                "quality": quality,
-                "spread_quality": spread_quality,
-                "last_source": last_source,
-                "ts": quote_ts,
-            },
-            "ts": iso_now(),
-        }
-        put_cached(ticker, payload)
-        return payload
-
-    except TiError as e:
-        error = f"tiingo: {e}"
     except Exception as e:
-        error = f"providers failed: {e!r}"
+        warnings.append(f"liquidity: {e!r}")
+        liquidity_flag = True
+
+    feats = {
+        "sent_mean": float(sent_mean),
+        "sent_std": float(sent_std),
+        "r_1m": float(r_1m),
+        "r_5m": float(r_5m),
+        "above_sma20": bool(above),
+        "mins_since_news": int(mins_since_news),
+        "rv20": float(rv20),
+        "earnings_soon": bool(earnings_soon),
+        "liquidity_flag": bool(liquidity_flag),
+    }
 
     payload = {
-        "features": _synthetic_feats(),
+        "features": feats,
         "top_headline": top_headline,
-        "refs": [],
-        "refs_sources": [],
-        "error": error,
-        "quote": {"last": 0.0, "bid": None, "ask": None, "quality": "unknown"},
+        "refs": refs,
+        "refs_sources": refs_sources,
+        "error": "; ".join(warnings) if warnings else None,
+        "quote": {
+            "last": float(last_px) if last_px > 0.0 else 0.0,
+            "bid": float(bid_disp) if bid_disp is not None else None,
+            "ask": float(ask_disp) if ask_disp is not None else None,
+            "quality": quality,
+            "spread_quality": spread_quality,
+            "last_source": last_source,
+            "ts": quote_ts,
+        },
         "ts": iso_now(),
     }
-    put_cached(ticker, payload)
+    should_cache = (
+        payload["error"] is None
+        and payload["quote"].get("quality") in {"real", "derived"}
+    )
+
+    if should_cache:
+        put_cached(ticker, payload)
+
     return payload
