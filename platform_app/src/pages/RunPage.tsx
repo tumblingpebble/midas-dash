@@ -230,8 +230,8 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
               <div className="text-xs text-slate-400">Top feature importances (global)</div>
               <div className="mt-2 space-y-2">
                 {ex.top_importances.map((it) => (
-                  <div key={it.feature} className="flex items-center gap-3">
-                    <div className="w-40 truncate text-xs">
+                  <div key={it.feature} className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-0 flex-1 text-xs break-words">
                       <FeatureLabel feature={it.feature} />
                     </div>
                     <div className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
@@ -240,7 +240,7 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
                         style={{ width: `${Math.round(it.importance * 100)}%` }}
                       />
                     </div>
-                    <div className="w-12 text-right text-xs text-slate-400">
+                    <div className="text-right text-xs text-slate-400 sm:w-12">
                       {(it.importance * 100).toFixed(1)}%
                     </div>
                   </div>
@@ -409,7 +409,7 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         {plan.option_template && (
           <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Option template</div>
-            <div className="mt-2 grid gap-3 md:grid-cols-2 text-sm">
+            <div className="mt-2 grid gap-3 lg:grid-cols-2 text-sm">
               <div>
                 <div className="text-slate-400">Expiration</div>
                 <div className="text-slate-200">
@@ -555,7 +555,7 @@ export function RunPage() {
             Calls <code className="text-slate-200">GET /api/run?ticker=...</code>
           </p>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             <input
               value={ticker}
               onChange={(e) => {
@@ -570,7 +570,7 @@ export function RunPage() {
               placeholder="AAPL"
             />
             <button
-              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 disabled:opacity-60"
+              className="w-full rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 disabled:opacity-60 sm:w-auto"
               onClick={onRun}
               disabled={loading}
             >
@@ -636,7 +636,7 @@ export function RunPage() {
                 </a>
               )}
 
-              <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2">
                 <div className="rounded-xl bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Recommendation</div>
                   <div className="mt-1 text-sm">

@@ -11,7 +11,7 @@ export function NavBar() {
   return (
     <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-4">
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
           <div className="text-xl font-bold tracking-wide text-orange-500 sm:text-2xl">
             MIDAS DASH
           </div>
