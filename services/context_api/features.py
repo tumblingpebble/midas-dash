@@ -19,16 +19,23 @@ from .providers_yahoo import fetch_headlines_yahoo
 _QUOTE_RING: dict[str, deque[tuple[datetime, float]]] = {}
 SENT_URL = os.getenv("SENT_URL", "http://127.0.0.1:8016")
 
+
 def iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
 
 def _parse_iso_aware(s: str) -> datetime:
-    if not s: return datetime.now(timezone.utc)
+    if not s:
+        return datetime.now(timezone.utc)
     s2 = s.replace("Z", "+00:00")
-    try: d = datetime.fromisoformat(s2)
-    except Exception: return datetime.now(timezone.utc)
-    if d.tzinfo is None: d = d.replace(tzinfo=timezone.utc)
+    try:
+        d = datetime.fromisoformat(s2)
+    except Exception:
+        return datetime.now(timezone.utc)
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=timezone.utc)
     return d.astimezone(timezone.utc)
+
 
 def _note_quote(ticker: str, last: float) -> None:
     ring = _QUOTE_RING.setdefault(ticker, deque(maxlen=600))
@@ -37,27 +44,35 @@ def _note_quote(ticker: str, last: float) -> None:
     while ring and ring[0][0] < cut:
         ring.popleft()
 
+
 def _ret_from_ring(ticker: str, minutes: int) -> float:
     ring = _QUOTE_RING.get(ticker)
-    if not ring: return 0.0
+    if not ring:
+        return 0.0
     cutoff = datetime.now(timezone.utc) - timedelta(minutes=minutes)
     base = None
     for ts, px in reversed(ring):
         base = px
-        if ts <= cutoff: break
-    if base is None or base == 0.0: return 0.0
+        if ts <= cutoff:
+            break
+    if base is None or base == 0.0:
+        return 0.0
     last = ring[-1][1]
     return (last - base) / base if base else 0.0
 
+
 def _synthetic_feats() -> dict:
-    closes = [100,101,102,103,103,104,105,104,103,102,103,104,103,102,101,100,99,99,100,101,102]
-    highs  = [101,102,103,104,104,105,106,105,104,103,104,105,104,103,102,101,100,100,101,102,103]
-    lows   = [ 99,100,101,102,102,103,104,103,102,101,102,103,102,101,100, 99, 98, 98, 99,100,101]
+    closes = [100, 101, 102, 103, 103, 104, 105, 104, 103, 102, 103, 104, 103, 102, 101, 100, 99, 99, 100, 101, 102]
+    highs = [101, 102, 103, 104, 104, 105, 106, 105, 104, 103, 104, 105, 104, 103, 102, 101, 100, 100, 101, 102, 103]
+    lows = [99, 100, 101, 102, 102, 103, 104, 103, 102, 101, 102, 103, 102, 101, 100, 99, 98, 98, 99, 100, 101]
     rv20 = atr_normalized(highs, lows, closes, 20)
-    r_1m = ret_pct(closes, 1); r_5m = ret_pct(closes, 5)
+    r_1m = ret_pct(closes, 1)
+    r_5m = ret_pct(closes, 5)
     return {
-        "sent_mean": 0.0, "sent_std": 0.05,
-        "r_1m": float(r_1m), "r_5m": float(r_5m),
+        "sent_mean": 0.0,
+        "sent_std": 0.05,
+        "r_1m": float(r_1m),
+        "r_5m": float(r_5m),
         "above_sma20": bool(above_sma20(closes)),
         "mins_since_news": 12,
         "rv20": float(min(max(rv20, 0.02), 0.80)),
@@ -65,21 +80,45 @@ def _synthetic_feats() -> dict:
         "liquidity_flag": True,
     }
 
+
 def build_features_stub() -> dict:
     return _synthetic_feats()
 
-def _sent_from_headlines(headlines: List[dict]) -> tuple[float, float]:
-    titles = [h.get("title","").strip() for h in (headlines or []) if h.get("title")]
+
+def _sent_from_headlines(headlines: List[dict]) -> tuple[float, float, Dict[str, Any]]:
+    titles = [h.get("title", "").strip() for h in (headlines or []) if h.get("title")]
     titles = [t for t in titles if t]
-    if not titles: return 0.0, 0.05
+    if not titles:
+        return 0.0, 0.05, {
+            "engine": "none",
+            "warning": "no_titles",
+            "confidence": None,
+            "model_version": None,
+        }
+
     try:
         with httpx.Client(timeout=6.0, trust_env=False) as cli:
             r = cli.post(f"{SENT_URL}/api/sentiment", json={"texts": titles[:8]})
             r.raise_for_status()
             d = r.json()
-            return float(d.get("mean", 0.0)), float(d.get("std", 0.05))
-    except Exception:
-        return 0.0, 0.05
+            return (
+                float(d.get("mean", 0.0)),
+                float(d.get("std", 0.05)),
+                {
+                    "engine": d.get("engine"),
+                    "warning": d.get("warning"),
+                    "confidence": d.get("confidence"),
+                    "model_version": d.get("model_version"),
+                },
+            )
+    except Exception as e:
+        return 0.0, 0.05, {
+            "engine": "unavailable",
+            "warning": f"sentiment_request_failed:{type(e).__name__}",
+            "confidence": None,
+            "model_version": None,
+        }
+
 
 def _merge_refs(ticker: str, fn: List[dict], yh: List[dict]) -> List[dict]:
     """Merge finnhub + yahoo refs, de-dup by URL, keep order, take up to 3."""
@@ -88,15 +127,20 @@ def _merge_refs(ticker: str, fn: List[dict], yh: List[dict]) -> List[dict]:
     for lst in (fn, yh):
         for h in lst or []:
             title = (h.get("title") or "").strip()
-            url   = (h.get("url")   or "").strip()
-            pub   = (h.get("publisher") or "").strip()
-            if not title or not url: continue
-            if url in seen: continue
+            url = (h.get("url") or "").strip()
+            pub = (h.get("publisher") or "").strip()
+            if not title or not url:
+                continue
+            if url in seen:
+                continue
             seen.add(url)
             out.append({"title": title, "publisher": pub or "News", "url": url})
-            if len(out) >= 3: break
-        if len(out) >= 3: break
+            if len(out) >= 3:
+                break
+        if len(out) >= 3:
+            break
     return out
+
 
 def build_features_for(ticker: str) -> Dict[str, Any]:
     live = os.getenv("LIVE_PROVIDERS") == "1"
@@ -122,6 +166,12 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
                 "last_source": "unknown",
                 "ts": None,
             },
+            "sentiment": {
+                "engine": "none",
+                "warning": "live_providers_disabled",
+                "confidence": None,
+                "model_version": None,
+            },
             "ts": iso_now(),
         }
         return payload
@@ -143,6 +193,12 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
     # default features state
     sent_mean = 0.0
     sent_std = 0.05
+    sentiment_meta: Dict[str, Any] = {
+        "engine": "none",
+        "warning": None,
+        "confidence": None,
+        "model_version": None,
+    }
     r_1m = 0.0
     r_5m = 0.0
     rv20 = 0.02
@@ -180,10 +236,18 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
     # ----- Sentiment
     try:
         sent_pool = [r for r in (fh or [])[:3] if r] or [r for r in (yh or [])[:3] if r]
-        sent_mean, sent_std = _sent_from_headlines(sent_pool)
+        sent_mean, sent_std, sentiment_meta = _sent_from_headlines(sent_pool)
+        if sentiment_meta.get("warning"):
+            warnings.append(f"sentiment_meta: {sentiment_meta['warning']}")
     except Exception as e:
         warnings.append(f"sentiment: {e}")
         sent_mean, sent_std = 0.0, 0.05
+        sentiment_meta = {
+            "engine": "unavailable",
+            "warning": f"sentiment_exception:{type(e).__name__}",
+            "confidence": None,
+            "model_version": None,
+        }
 
     # ----- Tiingo quote
     try:
@@ -350,8 +414,15 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
             "last_source": last_source,
             "ts": quote_ts,
         },
+        "sentiment": {
+            "engine": sentiment_meta.get("engine"),
+            "warning": sentiment_meta.get("warning"),
+            "confidence": sentiment_meta.get("confidence"),
+            "model_version": sentiment_meta.get("model_version"),
+        },
         "ts": iso_now(),
     }
+
     should_cache = (
         payload["error"] is None
         and payload["quote"].get("quality") in {"real", "derived"}

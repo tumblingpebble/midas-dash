@@ -90,6 +90,13 @@ export type MidasExplain = {
   error?: string
 }
 
+export type SentimentMeta = {
+  engine?: string
+  warning?: string | null
+  confidence?: number | null
+  model_version?: string | null
+}
+
 export type MidasRunResponse = {
   ticker: string
   features: Record<string, unknown>
@@ -119,6 +126,7 @@ export type MidasRunResponse = {
   }
   refs?: Array<{ title?: string; publisher?: string; url?: string } | null>
   refs_sources?: string[]
+  sentiment?: SentimentMeta
   ts_ctx?: string
   ts_gateway?: string
   cache_age_seconds?: number

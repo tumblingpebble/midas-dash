@@ -123,6 +123,7 @@ function clamp01(x: number): number {
 function SentimentPill({ run }: { run: MidasRunResponse }) {
   const mean = Number(run.features?.sent_mean ?? 0)
   const std = Number(run.features?.sent_std ?? 0)
+  const meta = run.sentiment
 
   let label = "Neutral"
   if (mean > 0.15) label = "Positive"
@@ -144,6 +145,31 @@ function SentimentPill({ run }: { run: MidasRunResponse }) {
           stability {Math.round(score * 100)}%
         </span>
       </div>
+
+      {(meta?.engine || meta?.warning || meta?.confidence != null || meta?.model_version) && (
+        <div className="mt-2 space-y-1 text-xs text-slate-400">
+          {meta?.engine && (
+            <div>
+              Engine: <span className="text-slate-200">{meta.engine}</span>
+            </div>
+          )}
+          {meta?.confidence != null && (
+            <div>
+              Confidence: <span className="text-slate-200">{(Number(meta.confidence) * 100).toFixed(1)}%</span>
+            </div>
+          )}
+          {meta?.model_version && (
+            <div>
+              Model: <span className="text-slate-200">{meta.model_version}</span>
+            </div>
+          )}
+          {meta?.warning && (
+            <div className="text-amber-300">
+              Warning: <span className="text-amber-200">{meta.warning}</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
