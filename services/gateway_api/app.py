@@ -1,4 +1,4 @@
-#services/gateway_api/app.py
+# services/gateway_api/app.py
 from __future__ import annotations
 from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Query
@@ -14,11 +14,10 @@ ALLOW_ORIGINS = os.getenv("ALLOW_ORIGINS", "*")
 
 TIMEOUT = float(os.getenv("GATEWAY_TIMEOUT_S", "8"))
 RETRIES = int(os.getenv("GATEWAY_RETRIES", "2"))
-DELAY   = float(os.getenv("GATEWAY_RETRY_DELAY_S", "0.25"))
+DELAY = float(os.getenv("GATEWAY_RETRY_DELAY_S", "0.25"))
 
 app = FastAPI(title="MIDAS Gateway API", version="v1")
 
-# CORS for browser-based frontend
 origins = ["*"] if ALLOW_ORIGINS == "*" else [o.strip() for o in ALLOW_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
@@ -29,13 +28,13 @@ app.add_middleware(
 )
 
 def iso_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00","Z")
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
 def _parse_iso(s: str) -> Optional[datetime]:
     if not s:
         return None
     try:
-        return datetime.fromisoformat(s.replace("Z","+00:00")).astimezone(timezone.utc)
+        return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc)
     except Exception:
         return None
 
@@ -67,27 +66,25 @@ def _post_json(url: str, payload: dict) -> dict:
 
 @app.get("/healthz")
 def healthz():
-    return {"status":"ok","service":"gateway","version":"v1","ts":iso_now(),"CTX_URL":CTX_URL,"REC_URL":REC_URL}
+    return {"status": "ok", "service": "gateway", "version": "v1", "ts": iso_now(), "CTX_URL": CTX_URL, "REC_URL": REC_URL}
 
 @app.get("/api/run")
 def run(
     t: str = Query(..., alias="ticker"),
     explain: int = Query(0, ge=0, le=1),
 ) -> Dict[str, Any]:
-    # 1) features from context
     ctx = _get_json(f"{CTX_URL}/api/features/v2", params={"ticker": t})
     features: Dict[str, Any] = ctx.get("features", {}) or {}
     top_headline: Optional[Dict[str, str]] = ctx.get("top_headline")
     feature_note = ctx.get("error")
     quote: Dict[str, float | None] = ctx.get("quote") or {"last": 0.0, "bid": None, "ask": None}
+    sentiment: Dict[str, Any] = ctx.get("sentiment") or {}
     ts_ctx = ctx.get("ts")
-    refs: List[Optional[Dict[str,str]]] = ctx.get("refs") or []
+    refs: List[Optional[Dict[str, str]]] = ctx.get("refs") or []
     refs_sources: List[str] = ctx.get("refs_sources") or []
 
-    # 2) recommendation
     rec = _post_json(f"{REC_URL}/api/recommend", features)
 
-    # 2b) optional explainability
     explain_payload: Optional[Dict[str, Any]] = None
     if explain == 1:
         try:
@@ -95,7 +92,6 @@ def run(
         except HTTPException:
             explain_payload = {"error": "explain unavailable"}
 
-    # 3) option-chain prototype candidates (Yahoo / yfinance)
     option_chain_plan: Optional[Dict[str, Any]] = None
     try:
         rec_class = str(rec.get("class", "NO_ACTION"))
@@ -117,7 +113,6 @@ def run(
             "candidates": [],
         }
 
-    # 4) rules-based trade plan + beginner guidance
     trade_plan = build_trade_plan(
         ticker=t,
         features=features,
@@ -125,22 +120,20 @@ def run(
         quote=quote,
         option_chain_plan=option_chain_plan,
     )
-    
-    # 5) one-liner build
+
     headline = top_headline or {"title": "", "publisher": "", "url": ""}
     try:
         one = _post_json(f"{CTX_URL}/api/one_liner", {
-            "class_":     rec.get("class", "NO_ACTION"),
+            "class_": rec.get("class", "NO_ACTION"),
             "confidence": rec.get("confidence", 0.0),
-            "title":      headline.get("title", ""),
-            "publisher":  headline.get("publisher", ""),
-            "url":        headline.get("url", ""),
-            "refs":       refs,
+            "title": headline.get("title", ""),
+            "publisher": headline.get("publisher", ""),
+            "url": headline.get("url", ""),
+            "refs": refs,
         })
     except HTTPException:
-        one = {"text": f"{rec.get('class','NO_ACTION')} · {int(rec.get('confidence',0)*100)}% confidence"}
+        one = {"text": f"{rec.get('class', 'NO_ACTION')} · {int(rec.get('confidence', 0) * 100)}% confidence"}
 
-    # 6) cache age
     now = datetime.now(timezone.utc)
     tctx = _parse_iso(ts_ctx) if isinstance(ts_ctx, str) else None
     age_s = int((now - tctx).total_seconds()) if tctx else None
@@ -154,6 +147,7 @@ def run(
         "top_headline": top_headline,
         "refs": refs,
         "refs_sources": refs_sources,
+        "sentiment": sentiment,
         "ts_ctx": ts_ctx,
         "ts_gateway": iso_now(),
         "cache_age_seconds": age_s,
