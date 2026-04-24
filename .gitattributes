@@ -1,0 +1,6 @@
+audit_logs/sentiment_audit/setfit_model_hpc_full/model.safetensors filter=lfs diff=lfs merge=lfs -text
+audit_logs/sentiment_audit/setfit_model_hpc_full/*.pkl filter=lfs diff=lfs merge=lfs -text
+audit_logs/sentiment_audit/setfit_model_hpc_full/*.json filter=lfs diff=lfs merge=lfs -text
+audit_logs/sentiment_audit/setfit_model_hpc_full/*.txt filter=lfs diff=lfs merge=lfs -text
+audit_logs/sentiment_audit/setfit_model_hpc_full/1_Pooling/* filter=lfs diff=lfs merge=lfs -text
+audit_logs/sentiment_audit/setfit_model_hpc_full/2_Normalize/* filter=lfs diff=lfs merge=lfs -text
