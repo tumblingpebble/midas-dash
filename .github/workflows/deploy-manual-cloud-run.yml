@@ -37,6 +37,24 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.git_ref }}
+          lfs: true
+
+      - name: Pull Git LFS files
+        run: |
+          git lfs install
+          git lfs pull
+
+      - name: Verify SetFit model artifact
+        run: |
+          ls -lah audit_logs/sentiment_audit/setfit_model_hpc_full
+          du -sh audit_logs/sentiment_audit/setfit_model_hpc_full
+          test -f audit_logs/sentiment_audit/setfit_model_hpc_full/model.safetensors
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("audit_logs/sentiment_audit/setfit_model_hpc_full/model.safetensors")
+          print("size_bytes:", p.stat().st_size)
+          assert p.stat().st_size > 100_000_000, "model.safetensors looks too small; likely LFS pointer not real file"
+          PY
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -49,7 +67,7 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
-          version: '>= 363.0.0'
+          version: ">= 363.0.0"
 
       - name: Configure Docker for Artifact Registry
         run: |
@@ -64,9 +82,7 @@ jobs:
       - name: Build and push sentiment-api image
         run: |
           docker build \
-            -f services/Dockerfile \
-            --build-arg REQ_FILE=requirements.sentiment.txt \
-            --build-arg APP_MODULE=services.sentiment_api.app:app \
+            -f services/Dockerfile.sentiment \
             -t "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}" \
             .
           docker push "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}"
@@ -122,7 +138,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars "LIVE_PROVIDERS=1,SENT_URL=${SENT_URL}" \
+            --set-env-vars "LIVE_PROVIDERS=1,SENT_URL=${SENT_URL},SENT_TIMEOUT_S=20" \
             --update-secrets "FINNHUB_TOKEN=FINNHUB_TOKEN:1,TIINGO_TOKEN=TIINGO_TOKEN:1"
 
       - name: Capture context-api URL
@@ -139,6 +155,7 @@ jobs:
         run: |
           curl -fsS "${CONTEXT_URL}/openapi.json" | grep -q '"title":"MIDAS Context API"'
           curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=AAPL" | grep -q '"features"'
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | grep -q '"sentiment"'
 
       - name: Build and push recommender-api image
         run: |
@@ -209,6 +226,7 @@ jobs:
         run: |
           curl -fsS "${GATEWAY_URL}/openapi.json" | grep -q '"title":"MIDAS Gateway API"'
           curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | grep -q '"recommendation"'
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | grep -q '"sentiment"'
 
       - name: Build and push web image
         run: |
@@ -246,3 +264,10 @@ jobs:
 
           echo
           curl -I "${WEB_URL}"
+          echo
+          curl -fsS "${SENT_URL}/api/sentiment" \
+            -H 'Content-Type: application/json' \
+            -d '{"texts":["Bank of America (BAC) Remains in Warren Buffett’s Portfolio Since 2011; See Why","This Is Why Jefferies Believes Bank of America Corporation (BAC) Is a Buy","Piper Sandler, Truist Raise Bank of America (BAC) Targets After Q1 Beat"]}' \
+            | grep -q '"engine"'
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | grep -q '"sentiment"'
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | grep -q '"sentiment"'
