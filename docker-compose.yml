@@ -44,6 +44,12 @@ services:
       dockerfile: services/Dockerfile
       args:
         REQ_FILE: requirements.sentiment.txt
+    environment:
+      SENT_TTL_S: "90"
+      SETFIT_MODEL_DIR: "/app/audit_logs/sentiment_audit/setfit_model_hpc_full"
+      HF_HOME: "/app/.hf_cache"
+      TRANSFORMERS_CACHE: "/app/.hf_cache"
+      HF_HUB_DISABLE_XET: "1"
     command: ["uvicorn", "services.sentiment_api.app:app", "--host", "0.0.0.0", "--port", "8016"]
     ports:
       - "8016:8016"
