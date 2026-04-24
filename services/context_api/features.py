@@ -96,8 +96,11 @@ def _sent_from_headlines(headlines: List[dict]) -> tuple[float, float, Dict[str,
             "model_version": None,
         }
 
+    sent_timeout_s = float(os.getenv("SENT_TIMEOUT_S", "20"))
+
     try:
-        with httpx.Client(timeout=6.0, trust_env=False) as cli:
+        timeout = httpx.Timeout(connect=5.0, read=sent_timeout_s, write=10.0, pool=5.0)
+        with httpx.Client(timeout=timeout, trust_env=False) as cli:
             r = cli.post(f"{SENT_URL}/api/sentiment", json={"texts": titles[:8]})
             r.raise_for_status()
             d = r.json()
