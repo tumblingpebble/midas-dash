@@ -12,6 +12,7 @@ from .fallback_setfit import score_with_setfit, signed_score_from_label
 USE_TRANSFORMERS = True
 pipe = None
 pipe_disabled_reason: Optional[str] = None
+FINBERT_MODEL_VERSION = "ProsusAI/finbert"
 
 try:
     if USE_TRANSFORMERS:
@@ -38,9 +39,11 @@ except Exception as e:
     def get_pipe():
         return None
 
+
 # -------- Lightweight tertiary fallback scorer (lexicon-based) --------
 POS = {"beat", "beats", "beating", "outperform", "surge", "surges", "record", "upgrade", "upgrades", "bullish", "rally", "rallies", "strength"}
 NEG = {"miss", "misses", "warning", "downgrade", "downgrades", "bearish", "plunge", "plunges", "fall", "falls", "lawsuit", "probe", "investigation"}
+
 
 def lexicon_score(s: str) -> float:
     if not s:
@@ -53,13 +56,16 @@ def lexicon_score(s: str) -> float:
         return 0.0
     return max(-1.0, min(1.0, raw / 3.0))
 
+
 # -------- API --------
 app = FastAPI(title="MIDAS Sentiment API", version="v2")
 TTL = float(os.getenv("SENT_TTL_S", "90"))
 _CACHE: Dict[Tuple[str, ...], Tuple[float, dict]] = {}
 
+
 class SentIn(BaseModel):
     texts: List[str]
+
 
 class SentOut(BaseModel):
     ts: str
@@ -72,18 +78,42 @@ class SentOut(BaseModel):
     warning: Optional[str] = None
     model_version: Optional[str] = None
 
+
 def _iso_now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
 
-def _finbert_signed_score(pipe_inst, text: str) -> float:
-    out = pipe_inst(text, truncation=True)[0]
-    label = (out["label"] or "").lower()
-    score = float(out["score"])
-    if "pos" in label:
-        return +score
-    if "neg" in label:
-        return -score
-    return 0.0
+
+def _finbert_prob_score(pipe_inst, text: str) -> tuple[float, float]:
+    """
+    Use FinBERT class probabilities instead of top-label-only scoring.
+
+    signed_score = P(positive) - P(negative)
+    confidence   = max class probability
+    """
+    out = pipe_inst(text, truncation=True, top_k=None)
+
+    # pipeline may return:
+    # - list[dict] for one text
+    # - list[list[dict]] in some versions/shapes
+    if isinstance(out, list) and out and isinstance(out[0], list):
+        out = out[0]
+
+    probs = {"positive": 0.0, "negative": 0.0, "neutral": 0.0}
+
+    for item in out:
+        label = str(item.get("label", "")).lower()
+        score = float(item.get("score", 0.0))
+        if "pos" in label:
+            probs["positive"] = score
+        elif "neg" in label:
+            probs["negative"] = score
+        elif "neu" in label:
+            probs["neutral"] = score
+
+    signed = float(probs["positive"] - probs["negative"])
+    confidence = float(max(probs.values())) if probs else 0.0
+    return signed, confidence
+
 
 @app.get("/healthz")
 def healthz():
@@ -96,6 +126,7 @@ def healthz():
         "engine": engine,
         "pipe_disabled_reason": pipe_disabled_reason,
     }
+
 
 @app.post("/api/sentiment", response_model=SentOut)
 def analyze(x: SentIn):
@@ -123,9 +154,12 @@ def analyze(x: SentIn):
 
     if pipe_inst is not None:
         engine = "finbert"
+        model_version = FINBERT_MODEL_VERSION
         for t in key:
             try:
-                samples.append(_finbert_signed_score(pipe_inst, t))
+                signed, conf = _finbert_prob_score(pipe_inst, t)
+                samples.append(signed)
+                confidence_values.append(conf)
             except Exception as e:
                 pipe_disabled_reason = f"finbert_runtime_failed:{type(e).__name__}"
                 pipe = None
@@ -136,10 +170,11 @@ def analyze(x: SentIn):
                     engine = "setfit_fallback"
                     warning = pipe_disabled_reason
                     model_version = fb.get("model_version")
-                except Exception:
+                except Exception as inner_e:
                     samples.append(lexicon_score(t))
                     engine = "lexicon_fallback"
-                    warning = f"{pipe_disabled_reason};setfit_failed"
+                    warning = f"{pipe_disabled_reason};setfit_failed:{type(inner_e).__name__}"
+                    model_version = None
     else:
         try:
             per_item = [score_with_setfit(t) for t in key]
@@ -156,6 +191,7 @@ def analyze(x: SentIn):
             samples = [lexicon_score(t) for t in key]
             engine = "lexicon"
             warning = f"{warning or 'finbert_unavailable'};setfit_unavailable:{type(e).__name__}"
+            model_version = None
 
     n = len(samples)
     mean = sum(samples) / n if n else 0.0
@@ -173,7 +209,7 @@ def analyze(x: SentIn):
         confidence=float(avg_conf) if avg_conf is not None else None,
         warning=warning,
         model_version=model_version,
-    ).dict()
+    ).model_dump()
 
     _CACHE[key] = (now, out)
     return out
