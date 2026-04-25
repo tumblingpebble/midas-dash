@@ -96,8 +96,10 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --memory 2Gi \
-            --cpu 1 \
+            --memory 4Gi \
+            --cpu 2 \
+            --concurrency 10 \
+            --min-instances 1 \
             --timeout 300 \
             --set-env-vars "SENT_TTL_S=90"
 
