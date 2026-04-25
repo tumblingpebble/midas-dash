@@ -99,7 +99,7 @@ function RefLinks({ run }: { run: MidasRunResponse }) {
   if (!refs.length) return null
 
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-2 flex max-w-full flex-wrap gap-2">
       {refs.map((r) => (
         <a
           key={`${run.ticker}-${r.n}-${r.url}`}
@@ -134,11 +134,11 @@ function SentimentPill({ run }: { run: MidasRunResponse }) {
   const score = clamp01(0.6 * magnitude + 0.4 * stability)
 
   return (
-    <div className="rounded-xl bg-slate-950 px-3 py-3">
+    <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
       <div className="text-xs text-slate-400">Sentiment</div>
-      <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+      <div className="mt-1 flex max-w-full flex-wrap items-center gap-2 text-sm">
         <span className="font-semibold text-slate-100">{label}</span>
-        <span className="text-slate-400">
+        <span className="break-words text-slate-400">
           mean {mean.toFixed(3)} • std {std.toFixed(3)}
         </span>
         <span className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-0.5 text-xs text-slate-200">
@@ -147,7 +147,7 @@ function SentimentPill({ run }: { run: MidasRunResponse }) {
       </div>
 
       {(meta?.engine || meta?.warning || meta?.confidence != null || meta?.model_version) && (
-        <div className="mt-2 space-y-1 text-xs text-slate-400">
+        <div className="mt-2 space-y-1 break-words text-xs text-slate-400">
           {meta?.engine && (
             <div>
               Engine: <span className="text-slate-200">{meta.engine}</span>
@@ -165,7 +165,7 @@ function SentimentPill({ run }: { run: MidasRunResponse }) {
           )}
           {meta?.warning && (
             <div className="text-amber-300">
-              Warning: <span className="text-amber-200">{meta.warning}</span>
+              Warning: <span className="break-all text-amber-200">{meta.warning}</span>
             </div>
           )}
         </div>
@@ -196,7 +196,7 @@ function FeatureLabel({ feature }: { feature: string }) {
     <span
       title={meta?.help ?? feature}
       style={{ textDecoration: "underline dotted", cursor: "help" }}
-      className="text-slate-200"
+      className="break-words text-slate-200"
     >
       {meta?.label ?? feature}
     </span>
@@ -252,7 +252,7 @@ function ContextBanner({ run, nowMs }: { run: MidasRunResponse; nowMs: number })
   if (responseAgeSec !== null) hint += ` Response age: ${responseAgeSec}s.`
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-300">
+    <div className="min-w-0 break-words rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-300">
       {msg}
       {hint}
     </div>
@@ -264,31 +264,31 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
   if (!ex) return null
 
   return (
-    <details className="rounded-xl bg-slate-950 px-3 py-3">
+    <details className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
       <summary className="cursor-pointer text-sm text-slate-200">Explain (ML)</summary>
 
       {ex.error && (
-        <div className="mt-2 rounded-lg border border-red-800 bg-red-950 px-2 py-2 text-xs text-red-200">
+        <div className="mt-2 break-words rounded-lg border border-red-800 bg-red-950 px-2 py-2 text-xs text-red-200">
           {ex.error}
         </div>
       )}
 
       {!ex.error && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-3 min-w-0 space-y-3">
           <div className="text-xs text-slate-400">
-            Model version: <span className="text-slate-200">{ex.version ?? "unknown"}</span>
+            Model version: <span className="break-words text-slate-200">{ex.version ?? "unknown"}</span>
           </div>
 
           {ex.top_importances && ex.top_importances.length > 0 && (
-            <div>
+            <div className="min-w-0">
               <div className="text-xs text-slate-400">Top feature importances (global)</div>
               <div className="mt-2 space-y-2">
                 {ex.top_importances.map((it) => (
-                  <div key={it.feature} className="flex flex-wrap items-center gap-3">
+                  <div key={it.feature} className="flex min-w-0 flex-wrap items-center gap-3">
                     <div className="min-w-0 flex-1 text-xs break-words">
                       <FeatureLabel feature={it.feature} />
                     </div>
-                    <div className="h-2 flex-1 overflow-hidden rounded bg-slate-800">
+                    <div className="h-2 min-w-[80px] flex-1 overflow-hidden rounded bg-slate-800">
                       <div
                         className="h-2 bg-orange-500"
                         style={{ width: `${Math.round(it.importance * 100)}%` }}
@@ -304,20 +304,20 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
           )}
 
           {ex.inputs && (
-            <div>
+            <div className="min-w-0">
               <div className="text-xs text-slate-400">Inputs used for prediction</div>
 
-              <div className="mt-2 space-y-1 rounded-lg bg-slate-900 p-2 text-xs">
+              <div className="mt-2 min-w-0 space-y-1 rounded-lg bg-slate-900 p-2 text-xs">
                 {Object.entries(ex.inputs).map(([key, value]) => (
-                  <div key={key} className="flex flex-wrap gap-2">
+                  <div key={key} className="flex min-w-0 flex-wrap gap-2">
                     <FeatureLabel feature={key} />
                     <span className="text-slate-400">:</span>
-                    <span className="text-slate-200">{String(value)}</span>
+                    <span className="min-w-0 break-all text-slate-200">{String(value)}</span>
                   </div>
                 ))}
               </div>
 
-              <pre className="mt-2 overflow-auto rounded-lg bg-slate-900 p-2 text-xs text-slate-200">
+              <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-slate-900 p-2 text-xs text-slate-200">
                 {JSON.stringify(ex.inputs, null, 2)}
               </pre>
             </div>
@@ -338,8 +338,8 @@ function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
   }
 
   return (
-    <div className="mt-3 overflow-x-auto">
-      <table className="min-w-full text-xs">
+    <div className="mt-3 w-full max-w-full overflow-x-auto">
+      <table className="min-w-[720px] w-full text-xs">
         <thead className="text-slate-400">
           <tr className="border-b border-slate-800">
             <th className="px-2 py-2 text-left">Role</th>
@@ -382,40 +382,40 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
   const optionChainPlan = plan.option_chain_plan
 
   return (
-    <details className="rounded-xl bg-slate-950 px-3 py-3" open>
+    <details className="min-w-0 rounded-xl bg-slate-950 px-3 py-3" open>
       <summary className="cursor-pointer text-sm text-slate-200">Suggested trade plan</summary>
 
-      <div className="mt-3 space-y-4">
-        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+      <div className="mt-3 min-w-0 space-y-4">
+        <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
           <div className="text-xs text-slate-400">Setup</div>
-          <div className="mt-1 text-sm text-slate-100">
-            <span className="font-semibold">{plan.instrument_label ?? "Plan"}</span>
+          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2 text-sm text-slate-100">
+            <span className="min-w-0 break-words font-semibold">{plan.instrument_label ?? "Plan"}</span>
             {plan.confidence_bucket ? (
-              <span className="ml-2 text-slate-400">({plan.confidence_bucket} confidence bucket)</span>
+              <span className="break-words text-slate-400">({plan.confidence_bucket} confidence bucket)</span>
             ) : null}
           </div>
-          {plan.summary && <div className="mt-2 text-sm text-slate-300">{plan.summary}</div>}
+          {plan.summary && <div className="mt-2 break-words text-sm text-slate-300">{plan.summary}</div>}
         </div>
 
         {plan.entry_plan && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Entry idea</div>
-            <div className="mt-1 text-sm text-slate-200">
+            <div className="mt-1 break-words text-sm text-slate-200">
               {plan.entry_plan.plain_english ?? "—"}
             </div>
           </div>
         )}
 
         {plan.watch_trigger && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">What to wait for</div>
-            <div className="mt-1 text-sm text-slate-200">
+            <div className="mt-1 break-words text-sm text-slate-200">
               {plan.watch_trigger.plain_english ?? "—"}
             </div>
             {plan.watch_trigger.examples && plan.watch_trigger.examples.length > 0 && (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-300">
                 {plan.watch_trigger.examples.map((x, i) => (
-                  <li key={`${x}-${i}`}>{x}</li>
+                  <li key={`${x}-${i}`} className="break-words">{x}</li>
                 ))}
               </ul>
             )}
@@ -423,12 +423,12 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         )}
 
         {plan.range_view && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Expected range</div>
-            <div className="mt-1 text-sm text-slate-200">
+            <div className="mt-1 break-words text-sm text-slate-200">
               {plan.range_view.plain_english}
             </div>
-            <div className="mt-2 text-xs text-slate-400">
+            <div className="mt-2 break-words text-xs text-slate-400">
               Lower bound: <span className="text-slate-200">{plan.range_view.lower_bound}</span>{" "}
               • Upper bound: <span className="text-slate-200">{plan.range_view.upper_bound}</span>
             </div>
@@ -436,12 +436,12 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         )}
 
         {plan.target_zone && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Target zone</div>
-            <div className="mt-1 text-sm text-slate-200">
+            <div className="mt-1 break-words text-sm text-slate-200">
               {plan.target_zone.plain_english}
             </div>
-            <div className="mt-2 text-xs text-slate-400">
+            <div className="mt-2 break-words text-xs text-slate-400">
               Lower bound: <span className="text-slate-200">{plan.target_zone.lower_bound}</span>{" "}
               • Upper bound: <span className="text-slate-200">{plan.target_zone.upper_bound}</span>
             </div>
@@ -449,30 +449,30 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         )}
 
         {plan.upside_cap && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Upside cap</div>
-            <div className="mt-1 text-sm text-slate-200">
+            <div className="mt-1 break-words text-sm text-slate-200">
               {plan.upside_cap.plain_english}
             </div>
-            <div className="mt-2 text-xs text-slate-400">
+            <div className="mt-2 break-words text-xs text-slate-400">
               Cap area: <span className="text-slate-200">{plan.upside_cap.upper_bound}</span>
             </div>
           </div>
         )}
 
         {plan.option_template && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Option template</div>
-            <div className="mt-2 grid gap-3 lg:grid-cols-2 text-sm">
-              <div>
+            <div className="mt-2 grid min-w-0 gap-3 text-sm lg:grid-cols-2">
+              <div className="min-w-0">
                 <div className="text-slate-400">Expiration</div>
-                <div className="text-slate-200">
+                <div className="break-words text-slate-200">
                   {plan.option_template.dte_label ?? plan.option_template.dte_target ?? "—"}
                 </div>
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="text-slate-400">Strike style</div>
-                <div className="text-slate-200">
+                <div className="break-words text-slate-200">
                   {plan.option_template.strike_label ?? plan.option_template.strike_style ?? "—"}
                 </div>
               </div>
@@ -481,28 +481,28 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         )}
 
         {plan.hold_plan && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Hold window</div>
-            <div className="mt-1 text-sm text-slate-200">{plan.hold_plan.window ?? "—"}</div>
+            <div className="mt-1 break-words text-sm text-slate-200">{plan.hold_plan.window ?? "—"}</div>
             {plan.hold_plan.plain_english && (
-              <div className="mt-2 text-sm text-slate-300">{plan.hold_plan.plain_english}</div>
+              <div className="mt-2 break-words text-sm text-slate-300">{plan.hold_plan.plain_english}</div>
             )}
           </div>
         )}
 
         {plan.exit_rules && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Exit rules</div>
             <div className="mt-2 space-y-2 text-sm">
-              <div>
+              <div className="break-words">
                 <span className="text-slate-400">Take profit: </span>
                 <span className="text-slate-200">{plan.exit_rules.take_profit ?? "—"}</span>
               </div>
-              <div>
+              <div className="break-words">
                 <span className="text-slate-400">Risk exit: </span>
                 <span className="text-slate-200">{plan.exit_rules.risk_exit ?? "—"}</span>
               </div>
-              <div>
+              <div className="break-words">
                 <span className="text-slate-400">Time exit: </span>
                 <span className="text-slate-200">{plan.exit_rules.time_exit ?? "—"}</span>
               </div>
@@ -511,22 +511,22 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
         )}
 
         {plan.watchouts && plan.watchouts.length > 0 && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Watchouts</div>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-200">
               {plan.watchouts.map((w, i) => (
-                <li key={`${w}-${i}`}>{w}</li>
+                <li key={`${w}-${i}`} className="break-words">{w}</li>
               ))}
             </ul>
           </div>
         )}
 
         {plan.education?.terms && (
-          <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
             <div className="text-xs text-slate-400">Beginner terms</div>
             <div className="mt-2 space-y-2 text-sm">
               {Object.entries(plan.education.terms).map(([k, v]) => (
-                <div key={k}>
+                <div key={k} className="break-words">
                   <span className="font-semibold text-slate-200">{k}: </span>
                   <span className="text-slate-300">{String(v)}</span>
                 </div>
@@ -535,8 +535,8 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
           </div>
         )}
 
-        <div className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             <div className="text-xs text-slate-400">Candidate contracts</div>
             <span className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-0.5 text-[11px] text-slate-300">
               Prototype chain lookup
@@ -547,12 +547,12 @@ function TradePlanPanel({ run }: { run: MidasRunResponse }) {
           </div>
 
           {optionChainPlan?.selected_expiration && (
-            <div className="mt-2 text-xs text-slate-400">
+            <div className="mt-2 break-words text-xs text-slate-400">
               Selected expiration: <span className="text-slate-200">{optionChainPlan.selected_expiration}</span>
             </div>
           )}
 
-          <div className="mt-2 text-xs text-slate-400">
+          <div className="mt-2 break-words text-xs text-slate-400">
             These are candidate contracts for learning and prototyping, not guaranteed best execution choices.
           </div>
 
@@ -599,17 +599,17 @@ export function RunPage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6">
+    <main className="mx-auto w-full max-w-5xl min-w-0 overflow-x-hidden px-4 py-6">
       <LoadingOverlay show={loading} />
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-1">
+      <div className="grid min-w-0 gap-4 lg:grid-cols-3">
+        <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-1">
           <h2 className="text-sm font-semibold text-slate-200">Run</h2>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="mt-1 break-words text-sm text-slate-400">
             Calls <code className="text-slate-200">GET /api/run?ticker=...</code>
           </p>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex max-w-full flex-wrap gap-2">
             <input
               value={ticker}
               onChange={(e) => {
@@ -620,7 +620,7 @@ export function RunPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") onRun()
               }}
-              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500"
+              className="w-full min-w-0 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-500"
               placeholder="AAPL"
             />
             <button
@@ -633,7 +633,7 @@ export function RunPage() {
           </div>
 
           {err && (
-            <div className="mt-3 rounded-xl border border-red-800 bg-red-950 px-3 py-2 text-xs text-red-200">
+            <div className="mt-3 break-words rounded-xl border border-red-800 bg-red-950 px-3 py-2 text-xs text-red-200">
               {err}
             </div>
           )}
@@ -647,7 +647,7 @@ export function RunPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-2">
+        <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-2">
           <h2 className="text-sm font-semibold text-slate-200">Results</h2>
 
           {!data && !err && (
@@ -657,25 +657,25 @@ export function RunPage() {
           )}
 
           {data && (
-            <div className="mt-3 space-y-3">
+            <div className="mt-3 min-w-0 space-y-3">
               <ContextBanner run={data} nowMs={nowMs} />
 
               {data.features_note && (
-                <div className="rounded-xl border border-amber-800 bg-amber-950/50 px-3 py-3 text-sm text-amber-200">
+                <div className="break-words rounded-xl border border-amber-800 bg-amber-950/50 px-3 py-3 text-sm text-amber-200">
                   <div className="font-semibold">Data warning</div>
                   <div className="mt-1">{data.features_note}</div>
                 </div>
               )}
 
-              <div className="rounded-xl bg-slate-950 px-3 py-3">
+              <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
                 <div className="text-xs text-slate-400">One-liner</div>
-                <div className="mt-1 text-sm text-slate-100">
+                <div className="mt-1 break-words text-sm text-slate-100">
                   {stripBracketRefs(data.one_liner?.text ?? "")}
                 </div>
                 <RefLinks run={data} />
               </div>
 
-              <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
+              <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
                 <MidasCanvas run={data} />
               </div>
 
@@ -684,13 +684,13 @@ export function RunPage() {
                   href={data.top_headline.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 hover:border-slate-600"
+                  className="block min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 hover:border-slate-600"
                 >
                   <div className="text-xs text-slate-400">Top headline</div>
-                  <div className="mt-1 text-sm text-orange-200">
+                  <div className="mt-1 break-words text-sm text-orange-200">
                     {data.top_headline.title}
                   </div>
-                  <div className="mt-1 text-xs text-slate-500">
+                  <div className="mt-1 break-words text-xs text-slate-500">
                     {data.top_headline.publisher ?? "Source"} •{" "}
                     {data.top_headline.ts ?? ""}
                   </div>
@@ -698,7 +698,7 @@ export function RunPage() {
               )}
 
               {headlineItems(data).length > 0 && (
-                <div className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
+                <div className="min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Top headlines</div>
                   <div className="mt-2 space-y-3">
                     {headlineItems(data).slice(0, 3).map((h, idx) => (
@@ -707,12 +707,12 @@ export function RunPage() {
                         href={h.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="block rounded-lg border border-slate-800 bg-slate-900 px-3 py-3 hover:border-slate-600"
+                        className="block min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3 hover:border-slate-600"
                       >
-                        <div className="text-sm text-orange-200">
+                        <div className="break-words text-sm text-orange-200">
                           {h.title ?? h.url ?? "Untitled headline"}
                         </div>
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="mt-1 break-words text-xs text-slate-500">
                           {h.publisher ?? "Source"}
                         </div>
                       </a>
@@ -721,10 +721,10 @@ export function RunPage() {
                 </div>
               )}
 
-              <div className="grid gap-3 lg:grid-cols-2">
-                <div className="rounded-xl bg-slate-950 px-3 py-3">
+              <div className="grid min-w-0 gap-3 lg:grid-cols-2">
+                <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Recommendation</div>
-                  <div className="mt-1 text-sm">
+                  <div className="mt-1 break-words text-sm">
                     <span className="font-semibold">{data.recommendation.class}</span>{" "}
                     <span className="text-slate-400">
                       ({(data.recommendation.confidence * 100).toFixed(2)}%)
@@ -732,9 +732,9 @@ export function RunPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-slate-950 px-3 py-3">
+                <div className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
                   <div className="text-xs text-slate-400">Quote</div>
-                  <div className="mt-1 text-sm">
+                  <div className="mt-1 break-words text-sm">
                     {validLast(data) !== null ? (
                       <>
                         Last: {validLast(data)?.toFixed(2)}{" "}
@@ -756,7 +756,7 @@ export function RunPage() {
                     )}
                   </div>
                   {data.quote?.last_source && data.quote.last_source !== "unknown" && (
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 break-words text-xs text-slate-500">
                       Source: {data.quote.last_source}
                     </div>
                   )}
@@ -769,11 +769,11 @@ export function RunPage() {
 
               {settings.enableExplain && <ExplainPanel run={data} />}
 
-              <details className="rounded-xl bg-slate-950 px-3 py-3">
+              <details className="min-w-0 rounded-xl bg-slate-950 px-3 py-3">
                 <summary className="cursor-pointer text-sm text-slate-200">
                   Raw JSON (debug)
                 </summary>
-                <pre className="mt-2 overflow-auto text-xs text-slate-300">
+                <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all text-xs text-slate-300">
                   {JSON.stringify(data, null, 2)}
                 </pre>
               </details>
