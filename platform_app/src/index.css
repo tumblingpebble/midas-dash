@@ -9,7 +9,7 @@ body,
   min-height: 100%;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
   background: rgb(2 6 23);
 }
 
@@ -21,6 +21,20 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
+  min-width: 0;
+}
+
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+pre,
+code {
+  max-width: 100%;
 }
 
 @keyframes midasbar {

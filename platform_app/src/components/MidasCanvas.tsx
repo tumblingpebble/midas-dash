@@ -23,7 +23,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     const el = wrapRef.current
     if (!el) return
     const ro = new ResizeObserver(() => {
-      const next = Math.floor(el.clientWidth)
+      const next = Math.max(280, Math.floor(el.clientWidth))
       setW(next)
     })
     ro.observe(el)
@@ -190,7 +190,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
 
     const barsX = px + 160
     const barsY = py + 66
-    const barsW = pw - 170
+    const barsW = Math.max(120, pw - 170)
     const barH = 16
     const gap = 26
 
@@ -214,8 +214,8 @@ export function MidasCanvas({ run, height = 200 }: Props) {
   }, [data, w, height])
 
   return (
-    <div ref={wrapRef} className="w-full">
-      <canvas ref={canvasRef} className="w-full" />
+    <div ref={wrapRef} className="w-full overflow-hidden">
+      <canvas ref={canvasRef} className="block w-full max-w-full" />
     </div>
   )
 }

@@ -9,16 +9,16 @@ const active =
 
 export function NavBar() {
   return (
-    <header className="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 backdrop-blur">
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-4">
-        <div className="flex min-w-0 flex-wrap items-center gap-3">
-          <div className="text-xl font-bold tracking-wide text-orange-500 sm:text-2xl">
+    <header className="sticky top-0 z-10 w-full overflow-x-hidden border-b border-slate-800 bg-slate-950/90 backdrop-blur">
+      <div className="mx-auto flex w-full max-w-5xl min-w-0 flex-wrap items-center gap-3 px-4 py-4">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+          <div className="min-w-0 break-words text-xl font-bold tracking-wide text-orange-500 sm:text-2xl">
             MIDAS DASH
           </div>
           <div className="bp-badge rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300" />
         </div>
 
-        <nav className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
+        <nav className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end">
           <NavLink
             to="/"
             end
