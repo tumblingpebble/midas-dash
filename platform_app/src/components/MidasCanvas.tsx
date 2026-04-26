@@ -37,6 +37,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
 
     return {
       ticker: String(run.ticker ?? ""),
+      companyName: String(run.company_name ?? "").trim(),
       rec: String(run.recommendation?.class ?? ""),
       conf,
       sent,
@@ -71,7 +72,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
 
     const text = "#ffffff"
     const sub = "#e5e7eb"
-    const accent = "#f97316"
+    const accent = "#E5B93D"
     const good = "#22c55e"
     const bad = "#ef4444"
     const track = "#0f172a"
@@ -164,8 +165,9 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     const py = 22
     const pw = width - 36
 
-    drawText(px, py + 6, data.ticker, accent, "16px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
-    drawText(px + 70, py + 6, data.rec, text, "14px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
+    const displayName = data.companyName || data.ticker
+    drawText(px, py - 2, displayName, text, "15px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
+    drawText(px, py + 18, `${data.ticker} • ${data.rec}`, accent, "13px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
 
     const q = data.quote ? data.quote.toFixed(2) : "—"
     const qualityText =
@@ -175,21 +177,21 @@ export function MidasCanvas({ run, height = 200 }: Props) {
 
     drawText(
       px,
-      py + 26,
+      py + 40,
       `last: ${q} (${qualityText})`,
       sub,
       "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto"
     )
 
-    if (data.ts) drawText(px, py + 44, `ts: ${data.ts}`, sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
+    if (data.ts) drawText(px, py + 58, `ts: ${data.ts}`, sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
 
     const gaugeCx = px + 74
-    const gaugeCy = py + 112
+    const gaugeCy = py + 118
     const gaugeR = 44
     drawFullRingGauge(gaugeCx, gaugeCy, gaugeR, data.conf)
 
     const barsX = px + 160
-    const barsY = py + 66
+    const barsY = py + 72
     const barsW = Math.max(120, pw - 170)
     const barH = 16
     const gap = 26

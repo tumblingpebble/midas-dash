@@ -29,7 +29,7 @@ export function HistoryPage() {
 
       {history.items.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
-          No runs yet. Go to <span className="text-orange-200">Run</span> and fetch a ticker.
+          No runs yet. Go to <span className="text-amber-200">Run</span> and fetch a ticker.
         </div>
       ) : (
         <div className="mt-4 space-y-3">
@@ -55,7 +55,7 @@ export function HistoryPage() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   onClick={() => openSnapshot(it.snapshot)}
-                  className="rounded-lg bg-orange-500 px-3 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400"
+                  className="rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_14px_rgba(248,213,122,0.14)] transition hover:bg-amber-400"
                 >
                   Open snapshot
                 </button>
@@ -65,7 +65,7 @@ export function HistoryPage() {
                     href={it.headlineUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-orange-200 hover:border-slate-600"
+                    className="rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-sm text-amber-200 hover:border-slate-600"
                   >
                     Open headline
                   </a>
@@ -80,7 +80,7 @@ export function HistoryPage() {
                       href={r.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-orange-200 hover:border-slate-600"
+                      className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-amber-200 hover:border-slate-600"
                     >
                       [{r.n}]
                     </a>

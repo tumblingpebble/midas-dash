@@ -36,7 +36,7 @@ export function SettingsPage() {
               type="checkbox"
               checked={settings.enableExplain}
               onChange={(e) => setEnableExplain(e.target.checked)}
-              className="h-5 w-5 accent-orange-500"
+              className="h-5 w-5 accent-amber-500"
             />
           </label>
         </section>

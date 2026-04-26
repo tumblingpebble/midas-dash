@@ -40,13 +40,13 @@ export function LoadingOverlay({ show }: Props) {
         <div className="flex items-center gap-3">
           <Spinner />
           <div>
-            <div className="text-sm font-semibold text-slate-100">MIDAS DASH</div>
+            <div className="text-sm font-semibold text-slate-100">MIDAS</div>
             <div className="mt-1 text-sm text-slate-300">{MESSAGES[idx]}</div>
           </div>
         </div>
 
         <div className="mt-4 h-2 w-full overflow-hidden rounded bg-slate-800">
-          <div className="h-2 w-1/2 animate-[midasbar_1.2s_ease-in-out_infinite] bg-orange-500" />
+          <div className="h-2 w-1/2 animate-[midasbar_1.2s_ease-in-out_infinite] bg-amber-500" />
         </div>
 
         <div className="mt-3 text-xs text-slate-400">
@@ -60,7 +60,7 @@ export function LoadingOverlay({ show }: Props) {
 function Spinner() {
   return (
     <div
-      className="h-9 w-9 animate-spin rounded-full border-2 border-slate-700 border-t-orange-500"
+      className="h-9 w-9 animate-spin rounded-full border-2 border-slate-700 border-t-amber-500"
       aria-label="Loading"
     />
   )

@@ -106,7 +106,7 @@ function RefLinks({ run }: { run: MidasRunResponse }) {
           href={r.url}
           target="_blank"
           rel="noreferrer"
-          className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-orange-200 hover:border-slate-600"
+          className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-xs text-amber-200 hover:border-slate-600"
         >
           [{r.n}]
         </a>
@@ -290,7 +290,7 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
                     </div>
                     <div className="h-2 min-w-[80px] flex-1 overflow-hidden rounded bg-slate-800">
                       <div
-                        className="h-2 bg-orange-500"
+                        className="h-2 bg-[#E5B93D]"
                         style={{ width: `${Math.round(it.importance * 100)}%` }}
                       />
                     </div>
@@ -605,9 +605,6 @@ export function RunPage() {
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">
         <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-1">
           <h2 className="text-sm font-semibold text-slate-200">Run</h2>
-          <p className="mt-1 break-words text-sm text-slate-400">
-            Calls <code className="text-slate-200">GET /api/run?ticker=...</code>
-          </p>
 
           <div className="mt-4 flex max-w-full flex-wrap gap-2">
             <input
@@ -624,7 +621,7 @@ export function RunPage() {
               placeholder="AAPL"
             />
             <button
-              className="w-full rounded-xl bg-orange-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-orange-400 disabled:opacity-60 sm:w-auto"
+              className="w-full rounded-xl bg-[#E5B93D] px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_18px_rgba(229,185,61,0.22)] transition hover:bg-[#F1CA63] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
               onClick={onRun}
               disabled={loading}
             >
@@ -687,7 +684,7 @@ export function RunPage() {
                   className="block min-w-0 rounded-xl border border-slate-800 bg-slate-950 px-3 py-3 hover:border-slate-600"
                 >
                   <div className="text-xs text-slate-400">Top headline</div>
-                  <div className="mt-1 break-words text-sm text-orange-200">
+                  <div className="mt-1 break-words text-sm text-amber-200">
                     {data.top_headline.title}
                   </div>
                   <div className="mt-1 break-words text-xs text-slate-500">
@@ -709,7 +706,7 @@ export function RunPage() {
                         rel="noreferrer"
                         className="block min-w-0 rounded-lg border border-slate-800 bg-slate-900 px-3 py-3 hover:border-slate-600"
                       >
-                        <div className="break-words text-sm text-orange-200">
+                        <div className="break-words text-sm text-amber-200">
                           {h.title ?? h.url ?? "Untitled headline"}
                         </div>
                         <div className="mt-1 break-words text-xs text-slate-500">
