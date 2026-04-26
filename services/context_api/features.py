@@ -12,6 +12,7 @@ from .providers_finnhub import (
     fetch_headlines, FHError,
     fetch_earnings_date as fetch_earnings_finnhub,
     fetch_quote_finnhub,
+    fetch_company_name_finnhub,
 )
 from .providers_tiingo import fetch_candles_tiingo, fetch_quote_tiingo, TiError
 from .providers_yahoo import fetch_headlines_yahoo
@@ -156,6 +157,7 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
         feats = _synthetic_feats()
         payload = {
             "features": feats,
+            "company_name": ticker.upper().strip(),
             "top_headline": None,
             "refs": [None, None, None],
             "refs_sources": [],
@@ -183,6 +185,7 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
     top_headline: Optional[dict] = None
     refs: List[Optional[dict]] = [None, None, None]
     refs_sources: List[str] = []
+    company_name: Optional[str] = None
 
     # default quote state
     quote_ts = None
@@ -213,6 +216,13 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
     fh: List[dict] = []
     yh: List[dict] = []
     candles: List[dict] = []
+
+    # ----- Company profile
+    try:
+        company_name = fetch_company_name_finnhub(ticker)
+    except Exception as e:
+        warnings.append(f"company profile: {e!r}")
+        company_name = None
 
     # ----- Headlines
     try:
@@ -404,6 +414,7 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
 
     payload = {
         "features": feats,
+        "company_name": company_name or ticker.upper().strip(),
         "top_headline": top_headline,
         "refs": refs,
         "refs_sources": refs_sources,

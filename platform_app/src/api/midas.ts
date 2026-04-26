@@ -99,6 +99,7 @@ export type SentimentMeta = {
 
 export type MidasRunResponse = {
   ticker: string
+  company_name?: string
   features: Record<string, unknown>
   recommendation: {
     class: string
@@ -156,8 +157,21 @@ export async function runMidas(
 
   const res = await fetch(url)
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(`HTTP ${res.status}: ${text}`)
+    let message = `Request failed with HTTP ${res.status}`
+
+    try {
+      const body = await res.json()
+
+      if (typeof body?.detail === "string") {
+        message = body.detail
+      } else if (body?.detail) {
+        message = JSON.stringify(body.detail)
+      }
+    } catch {
+      // Keep the fallback message if the response body is not JSON.
+    }
+
+    throw new Error(message)
   }
 
   return res.json()

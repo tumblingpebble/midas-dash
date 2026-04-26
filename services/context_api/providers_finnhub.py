@@ -14,6 +14,8 @@ TTL_QUOTE = 15  # seconds
 _cache_news:  dict[tuple[str,int], tuple[float, List[Dict[str,Any]]]] = {}
 _cache_earn:  dict[str, tuple[float, Optional[str]]] = {}
 _cache_quote: dict[str, tuple[float, Dict[str, float]]] = {}
+TTL_PROFILE = int(os.getenv("FINNHUB_PROFILE_TTL_S", "86400"))
+_cache_profile: dict[str, tuple[float, Optional[str]]] = {}
 
 class FHError(Exception):
     pass
@@ -126,3 +128,30 @@ def fetch_quote_finnhub(ticker: str) -> Dict[str, float]:
     out  = {"last": last, "bid": None, "ask": None}
     _cache_quote[t] = (_now(), out)
     return out
+
+def fetch_company_name_finnhub(ticker: str) -> Optional[str]:
+    """Return a company display name from Finnhub profile2, cached for 24h by default."""
+    t = ticker.upper().strip()
+    if not t:
+        return None
+
+    hit = _cache_profile.get(t)
+    if hit and _now() - hit[0] < TTL_PROFILE:
+        return hit[1]
+
+    try:
+        data = _http_get("/stock/profile2", {"symbol": t})
+        if not isinstance(data, dict):
+            _cache_profile[t] = (_now(), None)
+            return None
+
+        name = str(data.get("name") or "").strip()
+        if not name:
+            name = str(data.get("ticker") or t).strip()
+
+        out = name or None
+        _cache_profile[t] = (_now(), out)
+        return out
+    except Exception:
+        _cache_profile[t] = (_now(), None)
+        return None

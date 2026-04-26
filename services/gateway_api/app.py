@@ -51,6 +51,39 @@ def _get_json(url: str, params: dict | None = None) -> dict:
                 time.sleep(DELAY)
     raise HTTPException(status_code=502, detail=f"GET {url} failed: {last_exc}")
 
+
+def _is_missing_symbol_context(ctx: Dict[str, Any], ticker: str) -> bool:
+    """Detect syntactically valid but unresolved tickers before producing a recommendation."""
+    t = (ticker or "").upper().strip()
+    quote = ctx.get("quote") or {}
+    top_headline = ctx.get("top_headline")
+    refs = ctx.get("refs") or []
+    company_name = str(ctx.get("company_name") or "").upper().strip()
+    err = str(ctx.get("error") or "").lower()
+
+    last = float(quote.get("last") or 0.0)
+    quality = str(quote.get("quality") or "unknown").lower()
+
+    has_refs = any(bool(r and r.get("title")) for r in refs if isinstance(r, dict))
+    company_resolved = bool(company_name and company_name != t)
+
+    provider_says_missing = (
+        "404" in err
+        or "not found" in err
+        or "no_titles" in err
+        or "no titles" in err
+    )
+
+    return (
+        provider_says_missing
+        and last <= 0.0
+        and quality == "unknown"
+        and not top_headline
+        and not has_refs
+        and not company_resolved
+    )
+
+
 def _post_json(url: str, payload: dict) -> dict:
     last_exc: Optional[Exception] = None
     with httpx.Client(timeout=TIMEOUT, trust_env=False) as client:
@@ -82,6 +115,17 @@ def run(
     ts_ctx = ctx.get("ts")
     refs: List[Optional[Dict[str, str]]] = ctx.get("refs") or []
     refs_sources: List[str] = ctx.get("refs_sources") or []
+    company_name = ctx.get("company_name")
+
+    if _is_missing_symbol_context(ctx, t):
+        clean_ticker = t.upper().strip()
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Ticker '{clean_ticker}' was not found. "
+                "Please enter a valid market symbol, such as NVDA, AAPL, MSFT, SPY, or QQQ."
+            ),
+        )
 
     rec = _post_json(f"{REC_URL}/api/recommend", features)
 
@@ -140,6 +184,7 @@ def run(
 
     resp: Dict[str, Any] = {
         "ticker": t,
+        "company_name": company_name,
         "features": features,
         "recommendation": rec,
         "one_liner": one,
