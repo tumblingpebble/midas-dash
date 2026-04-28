@@ -27,3 +27,28 @@ def ret_pct(closes: Sequence[float], delta: int) -> float:
 
 def above_sma20(closes: Sequence[float]) -> bool:
     return float(closes[-1]) > sma(closes, 20)
+
+
+def realized_vol_normalized(closes: Sequence[float], window: int = 20) -> float:
+    """Return close-to-close realized volatility over recent bars.
+
+    This is a fallback when ATR is unavailable or flat. It uses the standard
+    deviation of recent percentage returns, so it still varies by ticker when
+    high/low data is missing or repeated.
+    """
+    if len(closes) < window + 1:
+        raise ValueError("not enough data for realized volatility")
+
+    arr = np.asarray(closes[-(window + 1):], dtype=float)
+    prev = arr[:-1]
+    curr = arr[1:]
+
+    mask = prev != 0
+    if not mask.any():
+        return 0.0
+
+    returns = (curr[mask] - prev[mask]) / prev[mask]
+    if returns.size == 0:
+        return 0.0
+
+    return float(np.std(returns))

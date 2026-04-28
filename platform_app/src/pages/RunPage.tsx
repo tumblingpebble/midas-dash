@@ -593,9 +593,16 @@ export function RunPage() {
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
       setData(null)
+      localStorage.removeItem(LS_LAST_RUN)
     } finally {
       setLoading(false)
     }
+  }
+
+  function clearCurrentRun() {
+    setData(null)
+    setErr(null)
+    localStorage.removeItem(LS_LAST_RUN)
   }
 
   return (
@@ -627,6 +634,17 @@ export function RunPage() {
             >
               {loading ? "Running..." : "Run"}
             </button>
+
+            {(data || err) && (
+              <button
+                type="button"
+                className="w-full rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-[#F8D57A] hover:text-[#FFF4D6] sm:w-auto"
+                onClick={clearCurrentRun}
+                disabled={loading}
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           {err && (
