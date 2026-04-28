@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, List
 import httpx
 
 from .cache import get_cached, put_cached
-from .indicators import atr_normalized, ret_pct, above_sma20
+from .indicators import atr_normalized, realized_vol_normalized, ret_pct, above_sma20
 from .providers_finnhub import (
     fetch_headlines, FHError,
     fetch_earnings_date as fetch_earnings_finnhub,
@@ -338,9 +338,9 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
     # ----- returns + volatility
     try:
         if candles and len(candles) >= 2:
-            closes = [c["close"] for c in candles]
-            highs = [c["high"] for c in candles]
-            lows = [c["low"] for c in candles]
+            closes = [float(c["close"]) for c in candles if float(c.get("close") or 0.0) > 0.0]
+            highs = [float(c["high"]) for c in candles if float(c.get("high") or 0.0) > 0.0]
+            lows = [float(c["low"]) for c in candles if float(c.get("low") or 0.0) > 0.0]
 
             r_1m = ret_pct(closes, 1) if len(closes) >= 2 else _ret_from_ring(ticker, 1)
             r_5m = ret_pct(closes, 5) if len(closes) >= 6 else _ret_from_ring(ticker, 5)
@@ -357,14 +357,27 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
 
             hseg = (highs or [pad_val])[-len(series):]
             lseg = (lows or [pad_val])[-len(series):]
-            rv20 = atr_normalized(hseg, lseg, series, 20)
+
+            try:
+                rv20 = atr_normalized(hseg, lseg, series, 20)
+            except Exception as e:
+                warnings.append(f"atr volatility fallback: {e!r}")
+                rv20 = 0.0
+
+            if rv20 <= 0.0001:
+                try:
+                    rv20 = realized_vol_normalized(series, 20)
+                    warnings.append("rv20 used close-to-close realized volatility fallback")
+                except Exception as e:
+                    warnings.append(f"realized volatility fallback: {e!r}")
+
             above = bool(series[-1] > sum(series[-20:]) / 20.0)
         else:
             r_1m = _ret_from_ring(ticker, 1)
             r_5m = _ret_from_ring(ticker, 5)
-            base_px = last_px if last_px > 0.0 else 1.0
-            rv20 = atr_normalized([base_px] * 21, [base_px] * 21, [base_px] * 21, 20)
+            rv20 = max(abs(r_1m), abs(r_5m) / 2.0, 0.001)
             above = False
+            warnings.append("rv20 used quote-ring fallback because candles were unavailable")
     except Exception as e:
         warnings.append(f"indicators: {e!r}")
         synth = _synthetic_feats()
@@ -373,7 +386,7 @@ def build_features_for(ticker: str) -> Dict[str, Any]:
         rv20 = float(synth["rv20"])
         above = bool(synth["above_sma20"])
 
-    rv20 = float(min(max(rv20, 0.02), 0.80))
+    rv20 = float(min(max(rv20, 0.001), 0.80))
 
     # ----- earnings soon
     try:

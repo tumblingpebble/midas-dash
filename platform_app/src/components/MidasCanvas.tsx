@@ -33,7 +33,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
   const data = useMemo(() => {
     const conf = clamp(Number(run.recommendation?.confidence ?? 0), 0, 1)
     const sent = clamp(Number(run.features?.sent_mean ?? 0), -1, 1)
-    const rv20 = clamp(Number(run.features?.rv20 ?? 0.02), 0.02, 0.8)
+    const rv20 = clamp(Number(run.features?.rv20 ?? 0.001), 0.001, 0.8)
 
     return {
       ticker: String(run.ticker ?? ""),
@@ -199,7 +199,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
     drawText(barsX, barsY - 8, "sentiment (mean)", sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
     drawSentimentLeftBar(barsX, barsY, barsW, barH, data.sent)
 
-    const rvNormRaw = (data.rv20 - 0.02) / (0.8 - 0.02)
+    const rvNormRaw = (data.rv20 - 0.001) / (0.8 - 0.001)
     const rvVisible = Math.max(rvNormRaw, 0.03)
     drawText(barsX, barsY + barH + gap - 8, "volatility (rv20)", sub, "12px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto")
     drawBar(barsX, barsY + barH + gap, barsW, barH, rvVisible, accent)
