@@ -5,6 +5,7 @@ import { useNow } from "../hooks/useNow"
 import { useSettings } from "../hooks/useSettings"
 import { LoadingOverlay } from "../components/LoadingOverlay"
 import { MidasCanvas } from "../components/MidasCanvas"
+import { InfoTooltip } from "../components/InfoTooltip"
 
 const LS_TICKER = "midas_dash_last_ticker_v1"
 const LS_LAST_RUN = "midas_dash_last_run_v1"
@@ -45,6 +46,49 @@ const FEATURE_TOOLTIPS: Record<string, { label: string; help: string }> = {
   liquidity_flag: {
     label: "liquidity_flag",
     help: "Simple liquidity check using spread and volume heuristics. True suggests trading conditions look more liquid; false suggests thinner trading conditions.",
+  },
+}
+
+const OPTION_TABLE_TOOLTIPS: Record<string, { label: string; help: string }> = {
+  role: {
+    label: "Role",
+    help: "How this contract fits into the strategy, such as a main leg, short leg, long leg, or protective leg.",
+  },
+  side: {
+    label: "Side",
+    help: "Whether the option contract is a call or a put.",
+  },
+  strike: {
+    label: "Strike",
+    help: "The price at which the option can be exercised.",
+  },
+  exp: {
+    label: "Exp",
+    help: "Expiration date — the date when the option contract expires.",
+  },
+  dte: {
+    label: "DTE",
+    help: "Days to expiration — how many days remain until the option expires.",
+  },
+  moneyness: {
+    label: "Moneyness",
+    help: "Whether the option is in the money, at the money, or out of the money compared with the current stock price.",
+  },
+  bid: {
+    label: "Bid",
+    help: "The highest price a buyer is currently willing to pay for the option.",
+  },
+  ask: {
+    label: "Ask",
+    help: "The lowest price a seller is currently willing to accept for the option.",
+  },
+  oi: {
+    label: "OI",
+    help: "Open interest — the number of contracts currently open and not yet closed or exercised.",
+  },
+  vol: {
+    label: "Vol",
+    help: "Volume — the number of option contracts traded during the current session.",
   },
 }
 
@@ -192,14 +236,29 @@ function secondsSince(iso?: string, nowMs?: number): number | null {
 
 function FeatureLabel({ feature }: { feature: string }) {
   const meta = FEATURE_TOOLTIPS[feature]
+
+  if (!meta) {
+    return <span className="break-words text-slate-200">{feature}</span>
+  }
+
   return (
-    <span
-      title={meta?.help ?? feature}
-      style={{ textDecoration: "underline dotted", cursor: "help" }}
+    <InfoTooltip
+      label={meta.label}
+      help={meta.help}
       className="break-words text-slate-200"
-    >
-      {meta?.label ?? feature}
-    </span>
+    />
+  )
+}
+
+function OptionHeader({ name }: { name: keyof typeof OPTION_TABLE_TOOLTIPS }) {
+  const meta = OPTION_TABLE_TOOLTIPS[name]
+
+  return (
+    <InfoTooltip
+      label={meta.label}
+      help={meta.help}
+      className="text-slate-400"
+    />
   )
 }
 
@@ -317,9 +376,6 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
                 ))}
               </div>
 
-              <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-slate-900 p-2 text-xs text-slate-200">
-                {JSON.stringify(ex.inputs, null, 2)}
-              </pre>
             </div>
           )}
         </div>
@@ -342,16 +398,16 @@ function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
       <table className="min-w-[720px] w-full text-xs">
         <thead className="text-slate-400">
           <tr className="border-b border-slate-800">
-            <th className="px-2 py-2 text-left">Role</th>
-            <th className="px-2 py-2 text-left">Side</th>
-            <th className="px-2 py-2 text-left">Strike</th>
-            <th className="px-2 py-2 text-left">Exp</th>
-            <th className="px-2 py-2 text-left">DTE</th>
-            <th className="px-2 py-2 text-left">Moneyness</th>
-            <th className="px-2 py-2 text-left">Bid</th>
-            <th className="px-2 py-2 text-left">Ask</th>
-            <th className="px-2 py-2 text-left">OI</th>
-            <th className="px-2 py-2 text-left">Vol</th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="role" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="side" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="strike" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="exp" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="dte" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="moneyness" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="bid" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="ask" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="oi" /></th>
+            <th className="px-2 py-2 text-left"><OptionHeader name="vol" /></th>
           </tr>
         </thead>
         <tbody>
