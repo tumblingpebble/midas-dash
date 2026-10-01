@@ -66,7 +66,7 @@ Objective: run this existing project on this Windows 11 Home laptop in credentia
 - Browser Run button rendered DEBIT_CALL (83.76%) and live_providers_disabled warning. Dashboard verified at http://127.0.0.1:5173/ during local validation.
 - Backend Dockerfile-specific allowlist excludes dotenv files from build context.
 - No actual dotenv files read, live provider calls initiated, cloud deployment performed, or midas-research content copied.
-- Setup changes are packaged on codex/windows-mock-setup. The frontend was restarted on 2026-10-01 after confirming all three backend services remained healthy.
+- Setup changes were delivered through PR #22 and integrated into main. The frontend was restarted on 2026-10-01 after confirming all three backend services remained healthy.
 
 ## Start and stop
 
@@ -129,7 +129,9 @@ Validation before publishing: node scripts/mock-smoke.mjs --base-url http://127.
 
 Running-state descriptions above are historical validation evidence. Use the startup helper and smoke command to establish current availability. Broader product features and cloud deployment are outside this setup delivery.
 
-PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Initial hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. All 18 setup work orders are complete; zero remain. No merge or deployment has occurred.
+PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Initial hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. All 18 setup work orders are complete; zero remain. PR #22 was merged on 2026-10-01 by advancing main to the tested head without generating a merge commit. No deployment has occurred.
+
+## Historical hosted CI attempts
 
 First hosted result: compose-smoke passed on Ubuntu, including image builds, three healthy services, frontend npm ci/build, semantic proxy smoke and teardown. Gitleaks failed before scanning because shallow checkout omitted the parent in its requested commit range. The checkout now uses fetch-depth: 0; scanner behavior is unchanged. The original full-stack scan/SBOM remain enabled.
 
@@ -147,8 +149,17 @@ Hosted LFS repair run: https://github.com/tumblingpebble/midas-dash/actions/runs
 
 ## Delivery result
 
-- Verified code commit: 5651d24c03594a59a43dc6ecc5649bfedcac0c15; the final delivery update changes only this state file.
-- Application source and model assets match main; 14 files cover setup, dependencies, image builds, CI and documentation.
-- Current branch: codex/windows-mock-setup; PR #22 is prepared for review without merging or deploying.
+- Verified code commit: 5651d24c03594a59a43dc6ecc5649bfedcac0c15; merged head 947a0ecab9b8cf7a725ef486b1092015cd98b70a differs only in this state file. All four checks passed on the merged head: https://github.com/tumblingpebble/midas-dash/actions/runs/36912110874.
+- Application source and model assets were unchanged by this delivery; 14 files cover setup, dependencies, image builds, CI and documentation.
+- Current branch: main, tracking origin/main. PR #22 is merged; GitHub's mergeCommit field records the tested head 947a0ecab9b8cf7a725ef486b1092015cd98b70a at 2026-10-01T20:16:01Z. No deployment occurred.
 - Reproducible startup/stop commands are above and in README. The local dashboard is http://127.0.0.1:5173/ while its terminal is running.
 - Outstanding scope: original full-Compose frontend routing/port repair, a full Python lockfile and broader product features are outside this Windows mock setup.
+
+## Integration work orders
+
+| ID | Owner | Work | Status | Acceptance |
+| --- | --- | --- | --- | --- |
+| WO-19 | privacy_audit, orchestrator | Verify and integrate the approved PR without changing commit identities | complete | Six setup commits use the configured noreply identity; main advanced with an explicit lease; PR reports merged; local and remote main match the tested head |
+| WO-20 | roadmap_review, orchestrator | Record integration and preserve setup handoff | complete | Merged PR and current branch recorded; historical CI attempts labelled; startup instructions and delivery boundaries preserved |
+
+All 18 setup orders and both integration orders are complete; zero remain for this delivery. The main-branch push triggered verification CI, not deployment. Future product work requires a separate scope.
