@@ -8,45 +8,61 @@ on:
 jobs:
   compose-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      COMPOSE_DISABLE_ENV_FILE: "1"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create .env for CI (mock mode)
-        run: |
-          cat > .env <<EOF
-          LIVE_PROVIDERS=0
-          FINNHUB_TOKEN=
-          TIINGO_TOKEN=
-          EOF
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: platform_app/package-lock.json
 
-      - name: Build and start stack
+      - name: Build and start synthetic backend
         run: |
-          docker compose up -d --build
+          docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml up -d --build --wait --wait-timeout 180 context_api recommender_api gateway_api
 
-      - name: Wait for gateway health
+      - name: Install and build mock frontend
+        working-directory: platform_app
         run: |
+          npm ci
+          npm run build -- --config vite.mock.config.ts
+
+      - name: Start mock frontend and wait for readiness
+        working-directory: platform_app
+        run: |
+          nohup npm run dev -- --config vite.mock.config.ts > "$RUNNER_TEMP/midas-mock-vite.log" 2>&1 &
+          echo "$!" > "$RUNNER_TEMP/midas-mock-vite.pid"
           for i in $(seq 1 60); do
-            ok="$(docker inspect --format='{{json .State.Health.Status}}' $(docker compose ps -q gateway_api) 2>/dev/null || true)"
-            echo "gateway health=$ok"
-            if [ "$ok" = "\"healthy\"" ]; then
+            if curl --max-time 2 -fsS http://127.0.0.1:5173/ > /dev/null; then
               exit 0
             fi
-            sleep 2
+            sleep 1
           done
-          echo "Gateway did not become healthy"
-          docker compose ps
-          docker compose logs gateway_api context_api recommender_api sentiment_api midas_dash
+          echo "Mock frontend did not become ready"
           exit 1
 
-      - name: Smoke test endpoints
-        run: |
-          curl -fsS http://127.0.0.1:8015/healthz
-          curl -fsS "http://127.0.0.1:8015/api/run?ticker=AAPL&explain=1" | head -c 300
+      - name: Smoke test frontend proxy and synthetic recommendation
+        run: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173
 
-      - name: Tear down
+      - name: Show mock failure logs
+        if: failure()
+        run: |
+          docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml ps
+          docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml logs context_api recommender_api gateway_api
+          if [ -f "$RUNNER_TEMP/midas-mock-vite.log" ]; then
+            cat "$RUNNER_TEMP/midas-mock-vite.log"
+          fi
+
+      - name: Tear down mock stack
         if: always()
         run: |
-          docker compose down -v
+          if [ -f "$RUNNER_TEMP/midas-mock-vite.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/midas-mock-vite.pid")" 2>/dev/null || true
+          fi
+          docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml down -v
 
   trivy-scan:
     runs-on: ubuntu-latest

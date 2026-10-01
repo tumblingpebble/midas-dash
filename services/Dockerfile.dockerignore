@@ -1,0 +1,10 @@
+# Backend images require only these files; exclude all environment files.
+**
+!requirements.base.txt
+!requirements.sentiment.txt
+!services/
+!services/**
+**/.env
+**/.env.*
+**/__pycache__/
+**/*.pyc
