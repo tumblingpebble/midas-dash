@@ -53,8 +53,9 @@ Objective: run this existing project on this Windows 11 Home laptop in credentia
 
 ## Current blockers
 
-- None for local mock setup; Docker Linux engine running.
-- Build, model inference, explanation, frontend proxy and browser Run verified.
+- None for Windows mock setup or the verified code CI run.
+- Docker Linux engine running; three healthy mock services and frontend proxy verified after recovery.
+- Hosted offline sentiment inference, all five image scans and five-file SBOM upload passed.
 
 ## Final evidence and running state
 
@@ -122,13 +123,13 @@ Validation before publishing: node scripts/mock-smoke.mjs --base-url http://127.
 | --- | --- | --- | --- | --- |
 | WO-14 | privacy_audit, roadmap_review, orchestrator | Final scope, privacy, documentation and configuration review | complete | No blocking findings; nine intended files; application source unchanged |
 | WO-15 | orchestrator | Package setup changes on codex/windows-mock-setup and create draft PR | complete | Draft PR #22 attached; scoped commit; noreply author/committer; no deployment |
-| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | in progress | Hosted mock smoke and Gitleaks passed; Trivy found fixable container findings; SBOM awaits scan success |
-| WO-17 | orchestrator | Final handoff and remaining-work accounting | pending | PR, startup commands, check evidence and remaining issues recorded |
-| WO-18 | frontend_mock, windows_startup, privacy_audit, orchestrator | Repair verified container security findings without weakening CI | in progress | Debian/pip fixes verified locally and on three hosted backend scans; sentiment Transformers 5 compatibility repair remains |
+| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | complete | Hosted mock smoke, Gitleaks, offline model gate, all five Trivy scans and five-file SBOM upload passed |
+| WO-17 | orchestrator | Final handoff and remaining-work accounting | complete | PR, startup commands, verified code SHA/run, remaining scope and zero remaining setup orders recorded |
+| WO-18 | frontend_mock, windows_startup, privacy_audit, orchestrator | Repair verified container security findings without weakening CI | complete | Patched Debian/pip and compatible sentiment dependencies; LFS hydration fixed; hosted offline inference and all five Trivy scans passed |
 
 Running-state descriptions above are historical validation evidence. Use the startup helper and smoke command to establish current availability. Broader product features and cloud deployment are outside this setup delivery.
 
-Draft PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Initial hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. Three delivery work orders remain (sentiment image repair, CI verification and final handoff). No merge or deployment has occurred.
+PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Initial hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. All 18 setup work orders are complete; zero remain. No merge or deployment has occurred.
 
 First hosted result: compose-smoke passed on Ubuntu, including image builds, three healthy services, frontend npm ci/build, semantic proxy smoke and teardown. Gitleaks failed before scanning because shallow checkout omitted the parent in its requested commit range. The checkout now uses fetch-depth: 0; scanner behavior is unchanged. The original full-stack scan/SBOM remain enabled.
 
@@ -141,3 +142,13 @@ Hosted image-repair run: https://github.com/tumblingpebble/midas-dash/actions/ru
 Sentiment repair: transformers>=5.10.0,<6, sentence-transformers>=5.4.1,<6 and setfit==1.2.0. The first candidate failed because SetFit 1.1.3 imports a helper removed in Transformers 5; SetFit 1.2.0 supplies the compatibility fix. The local SetFit artifact uses Sentence Transformers 5.4.1 module paths. A dedicated sentiment build allowlist excludes dotenv files, and scripts/sentiment-smoke.py verifies cached FinBERT, the actual local SetFit artifact, and API fallback using synthetic text with networking disabled. Hosted CI runs the same offline acceptance with a ten-minute timeout before image scans. Local offline inference passed with Transformers 5.18.0, Sentence Transformers 5.7.0, SetFit 1.2.0, Torch 2.14.1 and scikit-learn 1.7.2 in a thin compatibility image. Docker became unavailable during the large-image scan, leaving no scan result. The engine and all three mock services have been restored, the frontend restarted, and fresh proxy smoke passed. The final image security scans will run in hosted CI. The lightweight Windows mock path still omits sentiment.
 
 Hosted dependency run: https://github.com/tumblingpebble/midas-dash/actions/runs/36909140050 (1db96e61f3a88a9593654afae91f249a9565c175). Mock smoke and Gitleaks passed; image builds and offline FinBERT inference passed. Offline SetFit loading failed because the full-image CI checkout lacked LFS hydration and copied pointer files. Both full-image jobs now enable LFS checkout, matching the existing manual deployment configuration. The smoke helper explicitly rejects pointer files before inference. No model artifact or application source is changed by this fix.
+
+Hosted LFS repair run: https://github.com/tumblingpebble/midas-dash/actions/runs/36910343715 (5651d24c03594a59a43dc6ecc5649bfedcac0c15). All four jobs passed: mock smoke, Gitleaks, Trivy (including offline FinBERT/SetFit/API fallback acceptance and all five image scans), and SBOM. Five SBOM files were uploaded: https://github.com/tumblingpebble/midas-dash/actions/runs/36910343715/artifacts/11187545725.
+
+## Delivery result
+
+- Verified code commit: 5651d24c03594a59a43dc6ecc5649bfedcac0c15; the final delivery update changes only this state file.
+- Application source and model assets match main; 14 files cover setup, dependencies, image builds, CI and documentation.
+- Current branch: codex/windows-mock-setup; PR #22 is prepared for review without merging or deploying.
+- Reproducible startup/stop commands are above and in README. The local dashboard is http://127.0.0.1:5173/ while its terminal is running.
+- Outstanding scope: original full-Compose frontend routing/port repair, a full Python lockfile and broader product features are outside this Windows mock setup.
