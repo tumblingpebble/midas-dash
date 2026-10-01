@@ -1,0 +1,3 @@
+# Packaging tools shared by both Python images; resolved in requirements.build.lock.txt.
+setuptools
+wheel

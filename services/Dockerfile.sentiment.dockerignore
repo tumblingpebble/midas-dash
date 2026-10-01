@@ -2,6 +2,10 @@
 **
 !requirements.base.txt
 !requirements.sentiment.txt
+!requirements.build.txt
+!requirements.build.lock.txt
+!requirements.base.lock.txt
+!requirements.sentiment.lock.txt
 !services/
 !services/**
 !audit_logs/

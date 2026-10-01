@@ -89,7 +89,7 @@ Add -BackendOnly to start only backend. Stop the currently running frontend befo
 - Frontend dependency findings resolved on 2026-10-01: npm audit now reports zero vulnerabilities after compatible lockfile updates.
 - CI compose-smoke now uses the isolated mock stack and verifies frontend routing plus semantic mock behavior. Full-stack Trivy/SBOM jobs remain enabled; hosted delivery results are tracked below.
 - Original full Compose frontend port/routing repair is tracked in the follow-up section below; the isolated mock path remains available.
-- Python dependencies lack a full lockfile; fresh builds may resolve differently.
+- Python dependency locking is in progress in the follow-up section below.
 - Broader product roadmap remains unspecified; this roadmap covers Windows mock setup.
 
 ## Next phase work orders
@@ -166,7 +166,7 @@ All 18 setup orders and both integration orders are complete for the original mo
 
 ## Full Compose frontend follow-up
 
-Current branch: codex/compose-frontend-routing, based on main at 5c0b3de654a265278bb3be57515750fe08a40b1b.
+Delivery branch: codex/compose-frontend-routing, based on main at 5c0b3de654a265278bb3be57515750fe08a40b1b.
 
 Scope: repair the original full-Compose frontend's port and API routing, preserving the shared Cloud Run configuration and application source. Verification uses synthetic backend services and temporary loopback frontend containers. Actual dotenv files, live providers, cloud deployment and unrelated repositories remain outside scope.
 
@@ -179,6 +179,25 @@ Scope: repair the original full-Compose frontend's port and API routing, preserv
 
 All four frontend follow-up orders are complete; 24 work orders are complete across this setup delivery and its frontend repair. Zero remain for these scopes. Python dependency locking and broader product work remain separate backlog items.
 
-PR: https://github.com/tumblingpebble/midas-dash/pull/23. Verified repair commit: 43234648738eb00fefee3057056abc854becdd4f. All four hosted jobs passed: https://github.com/tumblingpebble/midas-dash/actions/runs/36924816619. Expanded nginx/frontend acceptance, offline sentiment inference and all five image scans passed. Five SBOM files were uploaded: https://github.com/tumblingpebble/midas-dash/actions/runs/36924816619/artifacts/11194141272. The final delivery update changes only this state file. No merge or deployment occurred in this follow-up.
+PR: https://github.com/tumblingpebble/midas-dash/pull/23. Verified repair commit: 43234648738eb00fefee3057056abc854becdd4f. All four hosted jobs passed: https://github.com/tumblingpebble/midas-dash/actions/runs/36924816619. Expanded nginx/frontend acceptance, offline sentiment inference and all five image scans passed. Five SBOM files were uploaded: https://github.com/tumblingpebble/midas-dash/actions/runs/36924816619/artifacts/11194141272. The final delivery update changes only this state file. All four jobs also passed on final head 2846aa22c9b8629b14d3571ad9909153f0757cab: https://github.com/tumblingpebble/midas-dash/actions/runs/36926478279. PR #23 merged at 2026-10-01T22:03:06Z by advancing main to that exact tested head with an explicit lease. Local and remote main matched. No deployment occurred.
 
 Local acceptance on 2026-10-01: full Compose's frontend build succeeded from a 1.32 MB allowlisted context, with zero npm audit findings. Shared nginx passed `nginx -t` with networking disabled. Temporary loopback frontend containers passed gateway health, synthetic AAPL recommendation/explanation, SPA deep links, built JS/CSS, missing asset/API 404s and unavailable-upstream 502 checks. Ports 8081/8082 were occupied locally, so Docker assigned temporary ports 63695/59489; both test containers were removed. Fresh Vite proxy smoke on port 5173 still passed. Application source/assets, shared nginx, the manual cloud workflow and the lightweight mock configuration remain unchanged. The complete five-service stack was not started.
+
+## Python dependency locking follow-up
+
+Current branch: codex/python-dependency-locks, based on merged main at 2846aa22c9b8629b14d3571ad9909153f0757cab.
+
+Scope: lock existing Python 3.11/Linux amd64 runtime and packaging versions, enforce hashes in backend builds, and provide portable maintenance and CI freshness checks. Existing source, models, startup behavior, cloud workflow and provider boundaries remain unchanged. Docker base images, Debian packages, bootstrap pip and downloaded model artifacts are outside these Python locks.
+
+| ID | Owner | Work | Status | Acceptance |
+| --- | --- | --- | --- | --- |
+| WO-25 | privacy_audit, orchestrator | Verify and integrate approved PR #23 | complete | Clean worktree; noreply identities; tested main advanced with explicit lease; GitHub reports merged |
+| WO-26 | orchestrator | Generate hashed locks from accepted image versions | complete | Build/base/sentiment locks contain 3/48/107 packages; overlapping versions match accepted SBOM baseline |
+| WO-27 | windows_startup | Enforce locked Docker installs and safe input mapping | complete | Hash-required packaging/runtime installs, no build isolation, known REQ_FILE mapping, allowlists updated |
+| WO-28 | frontend_mock | Add portable lock maintenance and freshness helper | complete | Disposable compiler, fixed target and uv version, bounded temporary cleanup, no host Python requirement |
+| WO-29 | roadmap_review | Independently review dependencies, CI and documentation | complete | No blocking implementation or scope findings; reproducibility limits documented |
+| WO-30 | orchestrator | Verify builds and runtime; publish and track hosted CI | in progress | Lock freshness, mock behavior, offline sentiment, five image scans and SBOM upload must pass |
+
+The initial locks were seeded from the five-file SBOM artifact of accepted CI run 36926478279: https://github.com/tumblingpebble/midas-dash/actions/runs/36926478279/artifacts/11194024394. Only top-level Python distributions were used; vendored packaging records were excluded. No dependency upgrade is intended. Twenty-nine of thirty defined setup/follow-up orders are complete; one remains in this phase. Broader product work remains unspecified.
+
+Local acceptance on 2026-10-01: the lock freshness check passed with 3/48/107 packages. Base Docker build passed hash-required installation and dependency consistency checking; a network-disabled inspection confirmed all 48 installed versions match the lock and pip is removed. A cached negative build rejected unlocked `requirements.txt` as REQ_FILE. The three mock services rebuilt from the locks, became healthy, and the existing Vite proxy passed synthetic AAPL recommendation/explanation smoke at http://127.0.0.1:5173. Workflow parsing, helper syntax and whitespace checks passed. Hosted full sentiment inference, security scans and SBOM generation remain pending delivery validation.

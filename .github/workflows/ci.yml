@@ -20,6 +20,9 @@ jobs:
           cache: npm
           cache-dependency-path: platform_app/package-lock.json
 
+      - name: Verify Python dependency locks
+        run: node scripts/python-locks.mjs --check
+
       - name: Build and start synthetic backend
         run: |
           docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml up -d --build --wait --wait-timeout 180 context_api recommender_api gateway_api

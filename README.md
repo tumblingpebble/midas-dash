@@ -97,6 +97,21 @@ Live context in the original full Compose stack requires provider tokens, `LIVE_
 
 Live provider variables used by the code are `FINNHUB_TOKEN` and `TIINGO_TOKEN`. Keep credentials outside tracked files. Live mode and cloud deployment are separate from the credential-free mock setup.
 
+## Python dependency locks
+
+Backend images install exact versions with SHA-256 verification from `requirements.build.lock.txt`, `requirements.base.lock.txt`, and `requirements.sentiment.lock.txt`. These locks target Python 3.11 on Linux amd64, matching the Docker setup. The initial locks preserve all 48 base and 107 sentiment package versions from the accepted CI images, including the three shared packaging tools. They do not pin the Docker base image, Debian packages, bootstrap pip, or downloaded model artifacts.
+
+Edit `requirements.build.txt`, `requirements.base.txt`, or `requirements.sentiment.txt` to change dependency ranges. Then regenerate from the repository root with Docker Desktop running:
+
+```powershell
+node scripts/python-locks.mjs
+node scripts/python-locks.mjs --check
+```
+
+The [lock helper](scripts/python-locks.mjs) uses uv 0.12.21 inside a disposable Docker container. It copies only the three manifests and existing locks into a temporary directory; host Python is unnecessary. Regeneration prefers existing pins, resolves packaging tools first, and constrains the base and sentiment locks to their inherited versions. `--check` verifies canonical file contents without modifying the repository. CI runs this check before mock startup.
+
+Use `node scripts/python-locks.mjs --upgrade` only for an intentional dependency update. Review all lock changes and require the mock smoke, offline sentiment acceptance, image security scans, and SBOM jobs to pass. Container builds install the hashed packaging tools before application dependencies, disable build isolation, and reject unknown `REQ_FILE` values. The root `requirements.txt` remains an editable input alias; Docker builds consume the locks.
+
 ## Cloud deployment
 
 ### Authentication

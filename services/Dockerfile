@@ -11,16 +11,27 @@ RUN apt-get update && apt-get upgrade -y \
     curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN python -m pip install --no-cache-dir --upgrade pip
 
 ARG REQ_FILE=requirements.base.txt
 ARG APP_MODULE=services.context_api.app:app
 
 COPY requirements.base.txt /app/requirements.base.txt
 COPY requirements.sentiment.txt /app/requirements.sentiment.txt
-COPY ${REQ_FILE} /app/requirements.txt
+COPY requirements.build.txt /app/requirements.build.txt
+COPY requirements.build.lock.txt /app/requirements.build.lock.txt
+COPY requirements.base.lock.txt /app/requirements.base.lock.txt
+COPY requirements.sentiment.lock.txt /app/requirements.sentiment.lock.txt
 
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r /app/requirements.build.lock.txt
+
+# Preserve existing manifest-name callers, while refusing unlocked or arbitrary inputs.
+RUN case "$REQ_FILE" in \
+      requirements.base.txt|requirements.base.lock.txt) lock_file=/app/requirements.base.lock.txt ;; \
+      requirements.sentiment.txt|requirements.sentiment.lock.txt) lock_file=/app/requirements.sentiment.lock.txt ;; \
+      *) echo "Unsupported REQ_FILE: use requirements.base.txt or requirements.sentiment.txt (or their lock filenames)" >&2; exit 1 ;; \
+    esac \
+    && python -m pip install --no-cache-dir --require-hashes --no-build-isolation -r "$lock_file"
 
 RUN python -m pip check && python -m pip uninstall -y pip
 

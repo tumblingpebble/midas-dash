@@ -14,13 +14,17 @@ RUN apt-get update && apt-get upgrade -y \
     curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN python -m pip install --no-cache-dir --upgrade pip
 
 COPY requirements.base.txt /app/requirements.base.txt
 COPY requirements.sentiment.txt /app/requirements.sentiment.txt
-COPY requirements.sentiment.txt /app/requirements.txt
+COPY requirements.build.txt /app/requirements.build.txt
+COPY requirements.build.lock.txt /app/requirements.build.lock.txt
+COPY requirements.base.lock.txt /app/requirements.base.lock.txt
+COPY requirements.sentiment.lock.txt /app/requirements.sentiment.lock.txt
 
-RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN python -m pip install --no-cache-dir --require-hashes --only-binary=:all: -r /app/requirements.build.lock.txt
+RUN python -m pip install --no-cache-dir --require-hashes --no-build-isolation -r /app/requirements.sentiment.lock.txt
 
 COPY services /app/services
 COPY audit_logs/sentiment_audit/setfit_model_hpc_full /app/audit_logs/sentiment_audit/setfit_model_hpc_full
