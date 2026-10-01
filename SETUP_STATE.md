@@ -65,7 +65,7 @@ Objective: run this existing project on this Windows 11 Home laptop in credentia
 - Browser Run button rendered DEBIT_CALL (83.76%) and live_providers_disabled warning. Dashboard verified at http://127.0.0.1:5173/ during local validation.
 - Backend Dockerfile-specific allowlist excludes dotenv files from build context.
 - No actual dotenv files read, live provider calls initiated, cloud deployment performed, or midas-research content copied.
-- Source changes are uncommitted. The original frontend session ended; restarted on 2026-10-01 after confirming all three backend services remained healthy.
+- Setup changes are packaged on codex/windows-mock-setup. The frontend was restarted on 2026-10-01 after confirming all three backend services remained healthy.
 
 ## Start and stop
 
@@ -101,7 +101,7 @@ Add -BackendOnly to start only backend. Stop the currently running frontend befo
 
 2026-10-01 continuation: backend remained healthy; frontend restarted and proxy mock safety check passed. Optional priority question sent; proceeding with setup reliability and compatible dependency patches while broader feature scope remains undefined. No cloud/live provider work authorized or initiated.
 
-Final dependency evidence: npm audit fix --ignore-scripts made compatible updates within existing package.json ranges. Vite 7.3.6, esbuild 0.28.2, React Router/DOM 7.18.4, PostCSS 8.5.28. npm audit reported zero vulnerabilities; isolated production build passed. Tracked edit is package-lock.json only (294 insertions, 267 deletions); existing source behavior preserved. Frontend restarted to use patched dependencies during local validation. A temporary old esbuild directory remains under ignored node_modules after a Windows file-lock cleanup warning; build and new runtime passed. All changes remain local/uncommitted.
+Final dependency evidence: npm audit fix --ignore-scripts made compatible updates within existing package.json ranges. Vite 7.3.6, esbuild 0.28.2, React Router/DOM 7.18.4, PostCSS 8.5.28. npm audit reported zero vulnerabilities; isolated production build passed. Tracked edit is package-lock.json only (294 insertions, 267 deletions); existing source behavior preserved. Frontend restarted to use patched dependencies during local validation. A temporary old esbuild directory remains under ignored node_modules after a Windows file-lock cleanup warning; build and new runtime passed. These checks preceded the draft PR delivery recorded below.
 
 ## Mock CI and documentation work orders
 
@@ -121,10 +121,12 @@ Validation: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173 passed 
 | ID | Owner | Work | Status | Acceptance |
 | --- | --- | --- | --- | --- |
 | WO-14 | privacy_audit, roadmap_review, orchestrator | Final scope, privacy, documentation and configuration review | complete | No blocking findings; nine intended files; application source unchanged |
-| WO-15 | orchestrator | Package setup changes on codex/windows-mock-setup and create draft PR | in progress | Scoped commit; noreply identity; PR attached; no deployment |
-| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | pending | Report actual workflow results and any external limitations |
+| WO-15 | orchestrator | Package setup changes on codex/windows-mock-setup and create draft PR | complete | Draft PR #22 attached; scoped commit; noreply author/committer; no deployment |
+| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | in progress | Hosted mock smoke passed; Gitleaks parent-history checkout failure fixed; next run pending |
 | WO-17 | orchestrator | Final handoff and remaining-work accounting | pending | PR, startup commands, check evidence and remaining issues recorded |
 
 Running-state descriptions above are historical validation evidence. Use the startup helper and smoke command to establish current availability. Broader product features and cloud deployment are outside this setup delivery.
 
+Draft PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. Roughly two delivery work orders remain (CI verification/repairs and final handoff). No merge or deployment has occurred.
 
+First hosted result: compose-smoke passed on Ubuntu, including image builds, three healthy services, frontend npm ci/build, semantic proxy smoke and teardown. Gitleaks failed before scanning because shallow checkout omitted the parent in its requested commit range. The checkout now uses fetch-depth: 0; scanner behavior is unchanged. The original full-stack scan/SBOM remain enabled.
