@@ -1,6 +1,14 @@
 """Offline synthetic inference acceptance; run in the sentiment image without networking."""
 import importlib.metadata as metadata
 import math
+from pathlib import Path
+
+model_dir = Path("/app/audit_logs/sentiment_audit/setfit_model_hpc_full")
+for artifact in ("model.safetensors", "model_head.pkl", "config_setfit.json", "modules.json"):
+    with (model_dir / artifact).open("rb") as file:
+        assert not file.read(128).startswith(b"version https://git-lfs.github.com/spec/v1"), (
+            f"{artifact} is a Git LFS pointer; enable LFS checkout before building"
+        )
 
 from services.sentiment_api import app as sentiment
 from services.sentiment_api.fallback_setfit import get_setfit_model

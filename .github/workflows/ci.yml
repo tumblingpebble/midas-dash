@@ -69,6 +69,8 @@ jobs:
     needs: [compose-smoke]
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Build images
         run: |
@@ -155,6 +157,8 @@ jobs:
     needs: [trivy-scan]
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
 
       - name: Build images
         run: |
