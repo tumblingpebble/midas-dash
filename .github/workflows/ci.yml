@@ -74,6 +74,11 @@ jobs:
         run: |
           docker compose build
 
+      - name: Verify sentiment models offline
+        timeout-minutes: 10
+        run: |
+          docker run --rm -i --network none -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 midas-dash-sentiment_api:latest python - < scripts/sentiment-smoke.py
+
       - name: Prepare Trivy cache
         run: |
           mkdir -p .trivycache

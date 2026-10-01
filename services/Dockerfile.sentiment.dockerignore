@@ -1,0 +1,14 @@
+# Sentiment builds need only dependencies, service code and the local model.
+**
+!requirements.base.txt
+!requirements.sentiment.txt
+!services/
+!services/**
+!audit_logs/
+!audit_logs/sentiment_audit/
+!audit_logs/sentiment_audit/setfit_model_hpc_full/
+!audit_logs/sentiment_audit/setfit_model_hpc_full/**
+**/.env
+**/.env.*
+**/__pycache__/
+**/*.pyc
