@@ -6,7 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
     curl \
   && rm -rf /var/lib/apt/lists/*
 
@@ -20,6 +21,8 @@ COPY requirements.sentiment.txt /app/requirements.sentiment.txt
 COPY ${REQ_FILE} /app/requirements.txt
 
 RUN pip install --no-cache-dir -r /app/requirements.txt
+
+RUN python -m pip check && python -m pip uninstall -y pip
 
 COPY services /app/services
 

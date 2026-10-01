@@ -86,7 +86,7 @@ Add -BackendOnly to start only backend. Stop the currently running frontend befo
 ## Follow-up backlog outside completed local setup
 
 - Frontend dependency findings resolved on 2026-10-01: npm audit now reports zero vulnerabilities after compatible lockfile updates.
-- CI compose-smoke now uses the isolated mock stack and verifies frontend routing plus semantic mock behavior. Full-stack security scan/SBOM jobs remain unchanged; hosted execution pending a separately authorized Git update.
+- CI compose-smoke now uses the isolated mock stack and verifies frontend routing plus semantic mock behavior. Full-stack Trivy/SBOM jobs remain enabled; hosted delivery results are tracked below.
 - Original full Compose frontend port/routing issues remain; isolated mock path avoids them.
 - Python dependencies lack a full lockfile; fresh builds may resolve differently.
 - Broader product roadmap remains unspecified; this roadmap covers Windows mock setup.
@@ -99,7 +99,7 @@ Add -BackendOnly to start only backend. Stop the currently running frontend befo
 | WO-8 | windows_startup | Startup review and bounded reliability fixes | complete | Explicit Compose project name; frontend preflight; Windows PowerShell 5.1 parse passed |
 | WO-9 | orchestrator | Integrate results, verify runtime, update state | complete | Compatible patch scope chosen; frontend restarted; fresh mock proxy/explanation passed |
 
-2026-10-01 continuation: backend remained healthy; frontend restarted and proxy mock safety check passed. Optional priority question sent; proceeding with setup reliability and compatible dependency patches while broader feature scope remains undefined. No cloud/live provider work authorized or initiated.
+2026-10-01 continuation: backend remained healthy; frontend restarted and proxy mock safety check passed. Setup reliability and compatible dependency patches proceeded while broader feature scope remained undefined. No cloud deployment or live provider calls were initiated.
 
 Final dependency evidence: npm audit fix --ignore-scripts made compatible updates within existing package.json ranges. Vite 7.3.6, esbuild 0.28.2, React Router/DOM 7.18.4, PostCSS 8.5.28. npm audit reported zero vulnerabilities; isolated production build passed. Tracked edit is package-lock.json only (294 insertions, 267 deletions); existing source behavior preserved. Frontend restarted to use patched dependencies during local validation. A temporary old esbuild directory remains under ignored node_modules after a Windows file-lock cleanup warning; build and new runtime passed. These checks preceded the draft PR delivery recorded below.
 
@@ -112,9 +112,9 @@ Final dependency evidence: npm audit fix --ignore-scripts made compatible update
 | WO-12 | roadmap_review | Repair README formatting and document verified Windows workflow | complete | Commands and links match config; Markdown fences repaired; cloud guidance retained |
 | WO-13 | orchestrator | Integrate and verify CI/docs changes | complete | Mock smoke and Bash syntax checks passed; independent review found no actionable issues |
 
-Scope: only the compose-smoke CI job becomes lightweight. Existing full-stack security scan/SBOM jobs remain intact. CI changes will remain local until a separately authorized Git update; no GitHub workflow run is claimed.
+Scope: the compose-smoke CI job becomes lightweight. Existing full-stack security scan/SBOM jobs remain intact. These checks preceded the draft PR and hosted runs recorded below.
 
-Validation: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173 passed through the running frontend (AAPL DEBIT_CALL, v0001). Workflow parsed using installed js-yaml; original events retained and Trivy/Gitleaks/SBOM definitions match HEAD after newline normalization. All compose-smoke shell blocks parsed with Git Bash. git diff --check passed. Existing frontend build/dependency verification from WO-7 remains applicable; no application source was changed in this phase. Hosted Ubuntu Actions execution remains unverified, and no remote push/deploy/workflow dispatch occurred.
+Validation before publishing: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173 passed through the running frontend (AAPL DEBIT_CALL, v0001). Workflow parsed using installed js-yaml; original events retained and security definitions matched the baseline after newline normalization. All compose-smoke shell blocks parsed with Git Bash. git diff --check passed. Existing frontend build/dependency verification from WO-7 remains applicable; no application source was changed in this phase. Subsequent hosted results are recorded below.
 
 ## Final delivery work orders
 
@@ -122,11 +122,16 @@ Validation: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173 passed 
 | --- | --- | --- | --- | --- |
 | WO-14 | privacy_audit, roadmap_review, orchestrator | Final scope, privacy, documentation and configuration review | complete | No blocking findings; nine intended files; application source unchanged |
 | WO-15 | orchestrator | Package setup changes on codex/windows-mock-setup and create draft PR | complete | Draft PR #22 attached; scoped commit; noreply author/committer; no deployment |
-| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | in progress | Hosted mock smoke passed; Gitleaks parent-history checkout failure fixed; next run pending |
+| WO-16 | orchestrator | Verify hosted CI and resolve setup-related failures | in progress | Hosted mock smoke and Gitleaks passed; Trivy found fixable container findings; SBOM awaits scan success |
 | WO-17 | orchestrator | Final handoff and remaining-work accounting | pending | PR, startup commands, check evidence and remaining issues recorded |
+| WO-18 | frontend_mock, windows_startup, privacy_audit, orchestrator | Repair verified container security findings without weakening CI | complete | Debian fixes installed; pip removed after dependency checks; rebuilt gateway Trivy has zero fixable HIGH/CRITICAL findings; mock smoke and three healthy services verified |
 
 Running-state descriptions above are historical validation evidence. Use the startup helper and smoke command to establish current availability. Broader product features and cloud deployment are outside this setup delivery.
 
-Draft PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. Roughly two delivery work orders remain (CI verification/repairs and final handoff). No merge or deployment has occurred.
+Draft PR: https://github.com/tumblingpebble/midas-dash/pull/22. Initial setup commit: 67accdd9ab728bb13a1d4b4062f89be97b7b45a1. Initial hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898373147. Two delivery work orders remain (CI verification and final handoff). No merge or deployment has occurred.
 
 First hosted result: compose-smoke passed on Ubuntu, including image builds, three healthy services, frontend npm ci/build, semantic proxy smoke and teardown. Gitleaks failed before scanning because shallow checkout omitted the parent in its requested commit range. The checkout now uses fetch-depth: 0; scanner behavior is unchanged. The original full-stack scan/SBOM remain enabled.
+
+Replacement hosted run: https://github.com/tumblingpebble/midas-dash/actions/runs/36898762993. Mock smoke and Gitleaks passed. Trivy found 11 fixable HIGH findings in the gateway image (seven Debian records, four Python records); SBOM was skipped because its prerequisite failed. The Python findings match pip's vendored dependencies, while installed runtime urllib3 and setuptools are already patched. Local Trivy reproduction is stored only under .git; application files and security thresholds remain unchanged.
+
+Container repair validation: both backend Dockerfiles now upgrade Debian packages and check dependencies before removing pip from the final runtime. Sentiment performs its model download before this cleanup; setuptools and wheel remain available. Docker build checks and independent review passed. The mock stack rebuilt successfully, dependency checks passed, all three services are healthy, and the frontend proxy smoke passed (AAPL DEBIT_CALL, v0001). Trivy 0.65.0 with the existing fixable HIGH/CRITICAL threshold reports zero findings in the rebuilt gateway image. Hosted full-stack scans and SBOM generation remain to verify.

@@ -9,7 +9,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends \
     curl \
   && rm -rf /var/lib/apt/lists/*
 
@@ -25,6 +26,8 @@ COPY services /app/services
 COPY audit_logs/sentiment_audit/setfit_model_hpc_full /app/audit_logs/sentiment_audit/setfit_model_hpc_full
 
 RUN python -c "from transformers import pipeline; pipeline('text-classification', model='ProsusAI/finbert'); print('FinBERT cached into image')"
+
+RUN python -m pip check && python -m pip uninstall -y pip
 
 ENV APP_MODULE=services.sentiment_api.app:app
 ENV PORT=8080
