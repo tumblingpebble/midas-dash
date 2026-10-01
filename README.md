@@ -68,9 +68,32 @@ With the frontend running, use the [mock smoke check](scripts/mock-smoke.mjs) to
 node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173
 ```
 
+### Full Compose frontend
+
+The original `docker-compose.yml` serves the built frontend at [http://127.0.0.1:8080](http://127.0.0.1:8080), mapping host port 8080 to nginx port 8080. Its read-only [Compose nginx configuration](platform_app/nginx.compose.conf) proxies `/api/` and `/healthz` to `gateway_api:8015`; SPA links keep working and missing `/assets/` files return 404. The frontend build uses an empty API base for these same-origin requests and excludes local dotenv files from its build context.
+
+The full stack includes the large sentiment image. The lightweight Windows mock workflow above remains available. Before starting the full stack, stop the mock backend to release ports 8012, 8014 and 8015. To start the full stack with synthetic context and no dotenv loading, use PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/dev-mock.ps1 -Stop
+$env:COMPOSE_DISABLE_ENV_FILE = "1"
+$env:LIVE_PROVIDERS = "0"
+$env:FINNHUB_TOKEN = ""
+$env:TIINGO_TOKEN = ""
+docker compose --env-file NUL -p midas-dash -f docker-compose.yml up -d --build --wait
+```
+
+These environment values apply to the current terminal. Stop that project with:
+
+```powershell
+docker compose --env-file NUL -p midas-dash -f docker-compose.yml down
+```
+
+The frontend repair is verified against synthetic backend services using `node scripts/nginx-smoke.mjs --base-url http://127.0.0.1:8081` and the existing mock smoke validator. CI uses temporary frontend ports 8081/8082 and also verifies unavailable-upstream errors. This does not claim a full five-service local startup; shared Cloud Run nginx configuration and deployment workflow remain intact.
+
 ### Live mode
 
-The original `docker-compose.yml` describes the full stack. Live context requires provider tokens, `LIVE_PROVIDERS=1`, and an available sentiment service. Its local sentiment address is `http://sentiment_api:8016`. The full Compose frontend needs its container port and API routing corrected before it is usable locally; the verified Windows setup above uses Vite.
+Live context in the original full Compose stack requires provider tokens, `LIVE_PROVIDERS=1`, and an available sentiment service. Its local sentiment address is `http://sentiment_api:8016`.
 
 Live provider variables used by the code are `FINNHUB_TOKEN` and `TIINGO_TOKEN`. Keep credentials outside tracked files. Live mode and cloud deployment are separate from the credential-free mock setup.
 

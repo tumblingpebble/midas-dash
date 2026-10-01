@@ -47,11 +47,47 @@ jobs:
       - name: Smoke test frontend proxy and synthetic recommendation
         run: node scripts/mock-smoke.mjs --base-url http://127.0.0.1:5173
 
+      - name: Build Compose frontend and validate standalone nginx
+        run: |
+          docker compose --env-file /dev/null -p midas-dash -f docker-compose.yml build midas_dash
+          docker run --rm --network none midas-dash-midas_dash:latest nginx -t
+
+      - name: Verify Compose frontend routes and assets
+        run: |
+          docker run -d --name midas-dash-compose-web \
+            --network midas-dash-mock_default -p 127.0.0.1:8081:8080 \
+            --mount "type=bind,source=$(pwd)/platform_app/nginx.compose.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
+            midas-dash-midas_dash:latest
+          for i in $(seq 1 30); do
+            if curl --max-time 2 -fsS http://127.0.0.1:8081/healthz > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          node scripts/nginx-smoke.mjs --base-url http://127.0.0.1:8081
+          node scripts/mock-smoke.mjs --base-url http://127.0.0.1:8081
+
+      - name: Verify unavailable gateway errors
+        run: |
+          docker run -d --name midas-dash-compose-web-unreachable \
+            --add-host gateway_api:127.0.0.1 -p 127.0.0.1:8082:8080 \
+            --mount "type=bind,source=$(pwd)/platform_app/nginx.compose.conf,target=/etc/nginx/conf.d/default.conf,readonly" \
+            midas-dash-midas_dash:latest
+          for i in $(seq 1 30); do
+            if curl --max-time 2 -fsS http://127.0.0.1:8082/ > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          node scripts/nginx-smoke.mjs --base-url http://127.0.0.1:8082 --upstream-down
+
       - name: Show mock failure logs
         if: failure()
         run: |
           docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml ps
           docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml logs context_api recommender_api gateway_api
+          docker logs midas-dash-compose-web 2>/dev/null || true
+          docker logs midas-dash-compose-web-unreachable 2>/dev/null || true
           if [ -f "$RUNNER_TEMP/midas-mock-vite.log" ]; then
             cat "$RUNNER_TEMP/midas-mock-vite.log"
           fi
@@ -62,6 +98,7 @@ jobs:
           if [ -f "$RUNNER_TEMP/midas-mock-vite.pid" ]; then
             kill "$(cat "$RUNNER_TEMP/midas-mock-vite.pid")" 2>/dev/null || true
           fi
+          docker rm -f midas-dash-compose-web midas-dash-compose-web-unreachable 2>/dev/null || true
           docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml down -v
 
   trivy-scan:

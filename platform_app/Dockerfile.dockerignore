@@ -1,0 +1,26 @@
+# Frontend build context only; paths are relative to the repository root.
+**
+!platform_app/
+!platform_app/package.json
+!platform_app/package-lock.json
+!platform_app/index.html
+!platform_app/vite.config.ts
+!platform_app/tsconfig.json
+!platform_app/tsconfig.app.json
+!platform_app/tsconfig.node.json
+!platform_app/postcss.config.*
+!platform_app/tailwind.config.*
+!platform_app/nginx.conf
+!platform_app/public/
+!platform_app/public/**
+!platform_app/src/
+!platform_app/src/**
+
+# Deny local environment files and generated content even inside allowed trees.
+**/.env
+**/.env.*
+**/node_modules/
+**/dist/
+**/.cache/
+**/__pycache__/
+**/*.pyc

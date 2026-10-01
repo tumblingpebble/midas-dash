@@ -88,7 +88,7 @@ Add -BackendOnly to start only backend. Stop the currently running frontend befo
 
 - Frontend dependency findings resolved on 2026-10-01: npm audit now reports zero vulnerabilities after compatible lockfile updates.
 - CI compose-smoke now uses the isolated mock stack and verifies frontend routing plus semantic mock behavior. Full-stack Trivy/SBOM jobs remain enabled; hosted delivery results are tracked below.
-- Original full Compose frontend port/routing issues remain; isolated mock path avoids them.
+- Original full Compose frontend port/routing repair is tracked in the follow-up section below; the isolated mock path remains available.
 - Python dependencies lack a full lockfile; fresh builds may resolve differently.
 - Broader product roadmap remains unspecified; this roadmap covers Windows mock setup.
 
@@ -151,9 +151,9 @@ Hosted LFS repair run: https://github.com/tumblingpebble/midas-dash/actions/runs
 
 - Verified code commit: 5651d24c03594a59a43dc6ecc5649bfedcac0c15; merged head 947a0ecab9b8cf7a725ef486b1092015cd98b70a differs only in this state file. All four checks passed on the merged head: https://github.com/tumblingpebble/midas-dash/actions/runs/36912110874.
 - Application source and model assets were unchanged by this delivery; 14 files cover setup, dependencies, image builds, CI and documentation.
-- Current branch: main, tracking origin/main. PR #22 is merged; GitHub's mergeCommit field records the tested head 947a0ecab9b8cf7a725ef486b1092015cd98b70a at 2026-10-01T20:16:01Z. No deployment occurred.
+- The original setup delivery is integrated into main. PR #22 is merged; GitHub's mergeCommit field records the tested head 947a0ecab9b8cf7a725ef486b1092015cd98b70a at 2026-10-01T20:16:01Z. No deployment occurred.
 - Reproducible startup/stop commands are above and in README. The local dashboard is http://127.0.0.1:5173/ while its terminal is running.
-- Outstanding scope: original full-Compose frontend routing/port repair, a full Python lockfile and broader product features are outside this Windows mock setup.
+- Original delivery backlog: full-Compose frontend routing/port repair (now tracked below), a full Python lockfile and broader product features.
 
 ## Integration work orders
 
@@ -162,4 +162,21 @@ Hosted LFS repair run: https://github.com/tumblingpebble/midas-dash/actions/runs
 | WO-19 | privacy_audit, orchestrator | Verify and integrate the approved PR without changing commit identities | complete | Six setup commits use the configured noreply identity; main advanced with an explicit lease; PR reports merged; local and remote main match the tested head |
 | WO-20 | roadmap_review, orchestrator | Record integration and preserve setup handoff | complete | Merged PR and current branch recorded; historical CI attempts labelled; startup instructions and delivery boundaries preserved |
 
-All 18 setup orders and both integration orders are complete; zero remain for this delivery. The main-branch push triggered verification CI, not deployment. Future product work requires a separate scope.
+All 18 setup orders and both integration orders are complete for the original mock delivery. The main-branch push triggered verification CI, not deployment. Follow-up work is tracked below.
+
+## Full Compose frontend follow-up
+
+Current branch: codex/compose-frontend-routing, based on main at 5c0b3de654a265278bb3be57515750fe08a40b1b.
+
+Scope: repair the original full-Compose frontend's port and API routing, preserving the shared Cloud Run configuration and application source. Verification uses synthetic backend services and temporary loopback frontend containers. Actual dotenv files, live providers, cloud deployment and unrelated repositories remain outside scope.
+
+| ID | Owner | Work | Status | Acceptance |
+| --- | --- | --- | --- | --- |
+| WO-21 | frontend_mock | Correct Compose frontend configuration and isolate frontend build inputs | complete | Port 8080 matches nginx; local API proxy preserves paths/query strings; cloud configuration retained; dotenv excluded |
+| WO-22 | windows_startup, orchestrator | Add and run frontend container acceptance checks | complete | Synthetic recommendation, SPA links, real assets, missing routes and unavailable-upstream behavior verified |
+| WO-23 | roadmap_review | Independently review configuration, CI and documentation | complete | No blocking scope, startup or safety findings |
+| WO-24 | orchestrator | Integrate results, update state and publish the reviewed change | in progress | Scoped noreply commit, clean working tree, PR and hosted validation recorded |
+
+One follow-up order remains: publish and verify hosted CI. Python dependency locking and broader product work remain separate backlog items.
+
+Local acceptance on 2026-10-01: full Compose's frontend build succeeded from a 1.32 MB allowlisted context, with zero npm audit findings. Shared nginx passed `nginx -t` with networking disabled. Temporary loopback frontend containers passed gateway health, synthetic AAPL recommendation/explanation, SPA deep links, built JS/CSS, missing asset/API 404s and unavailable-upstream 502 checks. Ports 8081/8082 were occupied locally, so Docker assigned temporary ports 63695/59489; both test containers were removed. Fresh Vite proxy smoke on port 5173 still passed. Application source/assets, shared nginx, the manual cloud workflow and the lightweight mock configuration remain unchanged. The complete five-service stack was not started.
