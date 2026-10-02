@@ -3,6 +3,6 @@ transformers>=5.10.0,<6
 accelerate>=1.0
 torch
 setfit==1.2.0
-sentence-transformers>=5.4.1,<6
+sentence-transformers>=6.1.0,<7
 datasets>=4
-scikit-learn>=1.5
+scikit-learn>=1.9.1
