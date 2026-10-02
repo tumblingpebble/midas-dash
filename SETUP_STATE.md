@@ -1,6 +1,6 @@
 # Windows local setup state
 
-Updated: 2026-10-01 (America/Los_Angeles)
+Updated: 2026-10-02 (America/Los_Angeles)
 Owner: primary Codex agent (orchestrator)
 Objective: run this existing project on this Windows 11 Home laptop in credential-free mock mode, with repeatable startup and verified UI/API behavior.
 
@@ -248,3 +248,21 @@ All thirty-eight defined setup, integration and follow-up orders are complete; z
 Final main evidence: https://github.com/tumblingpebble/midas-dash/actions/runs/36951365380 passed all four checks on state-only head e2efa91ac1d42ad5e2261cfea762cc9318c84c5e. All 22 expensive named steps were verified skipped; scope safeguards and Gitleaks executed; no SBOM artifact was produced. Jobs used 22 runner seconds combined. Local/remote/upstream main matched with a clean worktree, repository/global noreply configuration and the local privacy backup preserved.
 
 Both automatic policy-refresh runs 36951187693 and 36951187755 succeeded. No replacement Python version PR was produced. The npm updater opened https://github.com/tumblingpebble/midas-dash/pull/29 with only package.json/package-lock.json changes and existing direct toolchain majors retained. All four checks passed on its head c387eae418a88908e1b6acb47014099d55430144: https://github.com/tumblingpebble/midas-dash/actions/runs/36951684577. Frontend install/build/runtime acceptance, offline inference, all five image scans and five-SBOM validation executed successfully. PR #29 remains open for review; none of its dependency upgrades were merged into main. This confirms that the new policy produces a compatible routine batch while preserving the complete verification gates.
+
+## Reviewed frontend dependency maintenance
+
+Continuation scope on 2026-10-02: finish the compatible npm maintenance batch, preserve application source and existing main history, and refresh the local Windows frontend. The original 38 orders remain complete. No separate product roadmap was found; product changes, live providers and cloud deployment remain outside this batch.
+
+| ID | Owner | Work | Status | Acceptance |
+| --- | --- | --- | --- | --- |
+| WO-39 | frontend_mock, roadmap_review, orchestrator | Review the npm batch and Windows compatibility | complete | Public registry/integrity, engines, peers, native packages and lifecycle flags reviewed; one lint dependency correction verified |
+| WO-40 | orchestrator | Publish, verify and integrate the corrected dependency merge | in progress | Preserve main and bot history; noreply merge identity; one fresh complete hosted run before guarded main integration |
+| WO-41 | windows_startup, orchestrator | Refresh the local frontend and verify mock UI/API | complete | Windows install/audit/build, exact lint-baseline comparison, provider-disable preflight, mock smoke and fresh browser result passed |
+
+Delivery branch: codex/npm-maintenance, based on main at ad3114bdc7bd47e8caeeab6e061fde1148d034a2. A normal merge retains the bot head c387eae418a88908e1b6acb47014099d55430144 and the later state-only main commit. Hosted acceptance of the uncorrected bot head remains evidence for that original tree; the corrected tree requires a new full run.
+
+Windows acceptance: `npm ci` installed 200 packages and audited 201 with zero vulnerabilities; the mock production build passed with 54 modules. The Hooks lint plugin update from 7.0.1 to 7.1.1 introduced an additional diagnostic against the unchanged LoadingOverlay component. That plugin is retained at exactly 7.0.1, with only its root dependency declaration and lock entry changed from the candidate batch; all other candidate package entries are preserved. The focused reinstall also reports zero vulnerabilities. ESLint loads successfully, and the exact five existing diagnostics match the baseline by file, rule, location and message. This does not claim a zero-error lint result or change application source/rules.
+
+All three existing mock containers are healthy. The context service's actual public `LIVE_PROVIDERS=0` flag was verified before requests; its synthetic zero quote prevents the gateway's Yahoo lookup. The frontend is running at http://127.0.0.1:5173/ in mock mode with dotenv loading disabled. Semantic recommendation/explanation smoke passed (synthetic AAPL DEBIT_CALL, model v0001). A fresh browser Run updated the displayed response age to zero and showed the expected mock warning and recommendation; screenshot evidence is retained locally outside Git. No backend image rebuild, provider call or cloud deployment was needed for this refresh.
+
+Forty of forty-one defined orders are complete. One remains: verify and integrate the corrected maintenance tree, then record the final handoff. The five baseline lint findings and broader product work remain separate from this dependency-maintenance acceptance.
