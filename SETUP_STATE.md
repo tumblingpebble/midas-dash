@@ -185,7 +185,7 @@ Local acceptance on 2026-10-01: full Compose's frontend build succeeded from a 1
 
 ## Python dependency locking follow-up
 
-Current branch: codex/python-dependency-locks, based on merged main at 2846aa22c9b8629b14d3571ad9909153f0757cab.
+Delivery branch: codex/python-dependency-locks, based on merged main at 2846aa22c9b8629b14d3571ad9909153f0757cab.
 
 Scope: lock existing Python 3.11/Linux amd64 runtime and packaging versions, enforce hashes in backend builds, and provide portable maintenance and CI freshness checks. Existing source, models, startup behavior, cloud workflow and provider boundaries remain unchanged. Docker base images, Debian packages, bootstrap pip and downloaded model artifacts are outside these Python locks.
 
@@ -202,4 +202,26 @@ The initial locks were seeded from the five-file SBOM artifact of accepted CI ru
 
 Local acceptance on 2026-10-01: the lock freshness check passed with 3/48/107 packages. Base Docker build passed hash-required installation and dependency consistency checking; a network-disabled inspection confirmed all 48 installed versions match the lock and pip is removed. A cached negative build rejected unlocked `requirements.txt` as REQ_FILE. The three mock services rebuilt from the locks, became healthy, and the existing Vite proxy passed synthetic AAPL recommendation/explanation smoke at http://127.0.0.1:5173. Workflow parsing, helper syntax and whitespace checks passed.
 
-PR: https://github.com/tumblingpebble/midas-dash/pull/24. Verified code commit: dad987aef28c1a7879953c81eb1ca7aef5c3d4be. All four jobs passed: https://github.com/tumblingpebble/midas-dash/actions/runs/36935062978. Hosted mock/Vite/nginx acceptance, offline FinBERT/SetFit/API fallback, and all five image scans passed. Five SBOM files were uploaded: https://github.com/tumblingpebble/midas-dash/actions/runs/36935062978/artifacts/11198535582. Direct distribution inspection confirmed exact lock matches in context, gateway and recommender (48 packages each) and sentiment (107 packages). The final delivery update changes only this state file. No merge or deployment occurred in this dependency follow-up.
+PR: https://github.com/tumblingpebble/midas-dash/pull/24. Verified code commit: dad987aef28c1a7879953c81eb1ca7aef5c3d4be. All four jobs passed: https://github.com/tumblingpebble/midas-dash/actions/runs/36935062978. Hosted mock/Vite/nginx acceptance, offline FinBERT/SetFit/API fallback, and all five image scans passed. Five SBOM files were uploaded: https://github.com/tumblingpebble/midas-dash/actions/runs/36935062978/artifacts/11198535582. Direct distribution inspection confirmed exact lock matches in context, gateway and recommender (48 packages each) and sentiment (107 packages). The final delivery update changes only this state file. All four checks also passed on final head 6b0d8a74b8d6d4420c071e969bb38ee45d965c35: https://github.com/tumblingpebble/midas-dash/actions/runs/36936380564, with five SBOMs at https://github.com/tumblingpebble/midas-dash/actions/runs/36936380564/artifacts/11198935330 and exact installed lock matches. PR #24 merged at 2026-10-02T00:37:20Z by advancing main to that exact tested head with an explicit lease. No deployment occurred.
+
+## GitHub Actions reliability and resource follow-up
+
+Current branch: codex/actions-efficiency, based on merged main at 6b0d8a74b8d6d4420c071e969bb38ee45d965c35.
+
+Scope: inspect active GitHub failures, retire obsolete conflicting update batches, and reduce duplicate builds, overlapping work and artifact retention. Application source, assets, model files, dependency versions and the manual deployment workflow remain unchanged. No provider calls or deployment are authorized in this follow-up.
+
+| ID | Owner | Work | Status | Acceptance |
+| --- | --- | --- | --- | --- |
+| WO-31 | orchestrator | Safely integrate PR #24 | complete | Exact tested head; noreply identities; explicit main lease; local/remote match; GitHub confirms merge |
+| WO-32 | orchestrator | Audit GitHub failures and stale dependency batches | complete | Main/PR24 verified green; historical checkout/image failures already repaired; conflicting PR20/21 closed with branches preserved |
+| WO-33 | frontend_mock | Add conservative documentation-only CI classifier | complete | Six tests and actual commit-range checks; full PR scope; unknown paths/history require full CI |
+| WO-34 | orchestrator | Reduce duplicate builds and routine update rate | complete | Serialized builds; superseded-run cancellation; SBOMs reuse scanned images; seven-day retention; monthly grouped Dependabot |
+| WO-35 | roadmap_review | Independently review CI gates and resource changes | complete | No blockers; required check names, scan thresholds, offline acceptance and fail-closed scope retained |
+| WO-36 | orchestrator | Publish and verify the full new CI path, then integrate | in progress | Full source-triggered mock/offline/security/SBOM acceptance must pass before integration |
+| WO-37 | orchestrator | Record final evidence and verify lightweight docs path | pending | Documentation-only main update must keep all four checks green without rebuilding images |
+
+Audit: the newest relevant main and PR checks passed. Old Dependabot PR20/21 failed because of shallow Gitleaks history and old unpatched image builds; current main already fixes both. The batches also contain untested major upgrades (including scikit-learn/model compatibility and Vite/TypeScript/ESLint changes) and conflict with main. They were closed, preserving both branches; those migrations remain separate work rather than being silently merged. Historical failed runs remain as audit evidence.
+
+After PR24 integration, duplicate main CI run 36946909356 was intentionally canceled because that exact SHA had already passed all four PR checks. The automatic Dependency Graph run 36946912599 passed. Repository artifact metadata showed about 10.58 MiB retained and 81.43 MiB of caches at inspection. Public standard-runner minutes are free ([GitHub billing documentation](https://docs.github.com/en/actions/concepts/billing-and-usage)); artifacts/caches and other account usage are separate resources. Dependabot alerts could not be audited through the API: it reported disabled alerts and insufficient admin scope, so no zero-alert claim is made.
+
+Local validation: six scope tests passed. A real state-only range classified as lightweight; the full Python-lock delivery range correctly required full CI. Workflow YAML and all 26 Bash blocks parse, all four check names and existing fixable HIGH/CRITICAL scan thresholds are retained, and the SBOM job has no image build. Independent review found no blocking issues. Hosted validation is pending. Thirty-five of thirty-seven defined orders are complete; two remain in this follow-up.

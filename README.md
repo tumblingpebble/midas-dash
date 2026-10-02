@@ -112,6 +112,14 @@ The [lock helper](scripts/python-locks.mjs) uses uv 0.12.21 inside a disposable 
 
 Use `node scripts/python-locks.mjs --upgrade` only for an intentional dependency update. Review all lock changes and require the mock smoke, offline sentiment acceptance, image security scans, and SBOM jobs to pass. Container builds install the hashed packaging tools before application dependencies, disable build isolation, and reject unknown `REQ_FILE` values. The root `requirements.txt` remains an editable input alias; Docker builds consume the locks.
 
+## GitHub Actions resource use
+
+CI cancels superseded runs for the same PR or branch. Docker images build one service at a time, and the five SBOMs come from the same images that passed offline sentiment acceptance and security scanning. The separate SBOM check validates the uploaded files without rebuilding those images. SBOM artifacts are retained for seven days.
+
+Changes limited to root `README.md` and `SETUP_STATE.md` use a lightweight path: scope safeguards and secret scanning still run, while image builds, runtime tests and SBOM generation are skipped. All four check names remain available. A green documentation-only run does not mean images were scanned again. PR classification uses the complete PR diff, so a documentation update cannot hide earlier source changes; missing history or unknown paths require full CI.
+
+Dependabot checks for routine version updates monthly, with one grouped PR per ecosystem. Its version-update schedule and limit do not configure separate security-alert settings. Major dependency migrations need compatibility review and, for Python, regenerated locks before merging.
+
 ## Cloud deployment
 
 ### Authentication
