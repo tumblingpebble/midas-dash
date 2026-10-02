@@ -118,7 +118,7 @@ CI cancels superseded runs for the same PR or branch. Docker images build one se
 
 Changes limited to root `README.md` and `SETUP_STATE.md` use a lightweight path: scope safeguards and secret scanning still run, while image builds, runtime tests and SBOM generation are skipped. All four check names remain available. A green documentation-only run does not mean images were scanned again. PR classification uses the complete PR diff, so a documentation update cannot hide earlier source changes; missing history or unknown paths require full CI.
 
-Dependabot checks for routine version updates monthly, with one grouped PR per ecosystem. Its version-update schedule and limit do not configure separate security-alert settings. Major dependency migrations need compatibility review and, for Python, regenerated locks before merging.
+Dependabot checks for routine minor and patch version updates monthly, with one grouped PR per ecosystem. Its version-update schedule, limit and semantic-version allow rules do not configure separate security-alert settings. Major dependency migrations need a separate compatibility review and, for Python, regenerated locks before merging.
 
 ## Cloud deployment
 
