@@ -206,7 +206,7 @@ PR: https://github.com/tumblingpebble/midas-dash/pull/24. Verified code commit: 
 
 ## GitHub Actions reliability and resource follow-up
 
-Current branch: codex/actions-efficiency, based on merged main at 6b0d8a74b8d6d4420c071e969bb38ee45d965c35.
+Delivery branch: codex/actions-efficiency, based on main at 6b0d8a74b8d6d4420c071e969bb38ee45d965c35. PR #25 is merged; current branch is main at tested source head 47810226ba6e63fcf8eee775a0700a31dfbe9fa4 before the final documentation updates.
 
 Scope: inspect active GitHub failures, retire obsolete conflicting update batches, and reduce duplicate builds, overlapping work and artifact retention. Application source, assets, model files, dependency versions and the manual deployment workflow remain unchanged. No provider calls or deployment are authorized in this follow-up.
 
@@ -217,11 +217,17 @@ Scope: inspect active GitHub failures, retire obsolete conflicting update batche
 | WO-33 | frontend_mock | Add conservative documentation-only CI classifier | complete | Six tests and actual commit-range checks; full PR scope; unknown paths/history require full CI |
 | WO-34 | orchestrator | Reduce duplicate builds and routine update rate | complete | Serialized builds; superseded-run cancellation; SBOMs reuse scanned images; seven-day retention; monthly grouped Dependabot |
 | WO-35 | roadmap_review | Independently review CI gates and resource changes | complete | No blockers; required check names, scan thresholds, offline acceptance and fail-closed scope retained |
-| WO-36 | orchestrator | Publish and verify the full new CI path, then integrate | in progress | Full source-triggered mock/offline/security/SBOM acceptance must pass before integration |
-| WO-37 | orchestrator | Record final evidence and verify lightweight docs path | pending | Documentation-only main update must keep all four checks green without rebuilding images |
+| WO-36 | orchestrator | Publish and verify the full new CI path, then integrate | complete | All four hosted jobs passed on the exact source head; offline acceptance, five scans and five matching SBOMs verified; PR #25 merged with an explicit main lease |
+| WO-37 | orchestrator | Record final evidence and verify lightweight docs path | in progress | Documentation-only main update must keep all four checks green without rebuilding images |
 
 Audit: the newest relevant main and PR checks passed. Old Dependabot PR20/21 failed because of shallow Gitleaks history and old unpatched image builds; current main already fixes both. The batches also contain untested major upgrades (including scikit-learn/model compatibility and Vite/TypeScript/ESLint changes) and conflict with main. They were closed, preserving both branches; those migrations remain separate work rather than being silently merged. Historical failed runs remain as audit evidence.
 
 After PR24 integration, duplicate main CI run 36946909356 was intentionally canceled because that exact SHA had already passed all four PR checks. The automatic Dependency Graph run 36946912599 passed. Repository artifact metadata showed about 10.58 MiB retained and 81.43 MiB of caches at inspection. Public standard-runner minutes are free ([GitHub billing documentation](https://docs.github.com/en/actions/concepts/billing-and-usage)); artifacts/caches and other account usage are separate resources. Dependabot alerts could not be audited through the API: it reported disabled alerts and insufficient admin scope, so no zero-alert claim is made.
 
-Local validation: six scope tests passed. A real state-only range classified as lightweight; the full Python-lock delivery range correctly required full CI. Workflow YAML and all 26 Bash blocks parse, all four check names and existing fixable HIGH/CRITICAL scan thresholds are retained, and the SBOM job has no image build. Independent review found no blocking issues. Hosted validation is pending. Thirty-five of thirty-seven defined orders are complete; two remain in this follow-up.
+Local validation: six scope tests passed. A real state-only range classified as lightweight; the full Python-lock delivery range correctly required full CI. Workflow YAML and all 26 Bash blocks parse, all four check names and existing fixable HIGH/CRITICAL scan thresholds are retained, and the SBOM job has no image build. Independent review found no blocking issues.
+
+Full hosted acceptance: https://github.com/tumblingpebble/midas-dash/actions/runs/36948195184 passed all four jobs on 47810226ba6e63fcf8eee775a0700a31dfbe9fa4. Mock/frontend acceptance, all three offline sentiment checks and all five fixable HIGH/CRITICAL image scans executed successfully. Five SBOM files came from those scanned images, with exact Python lock matches in all four Python services. Artifact: https://github.com/tumblingpebble/midas-dash/actions/runs/36948195184/artifacts/11202879845 (1,219,102 bytes; seven-day retention). Job durations were 99 seconds for compose-smoke, 9 for Gitleaks, 427 for Trivy/build/offline/SBOM generation, and 6 for SBOM validation.
+
+PR: https://github.com/tumblingpebble/midas-dash/pull/25. It merged at 2026-10-02T01:06:09Z by advancing main to that exact tested head with an explicit lease. The duplicate main CI run 36949307693 was intentionally canceled after integration; its source head already had complete successful acceptance. Local and remote main matched, with a clean worktree and noreply commit identities. No application source, model assets or dependency versions changed in this six-file delivery, and no deployment occurred.
+
+Thirty-six of thirty-seven defined orders are complete. One remains: verify the lightweight path using this state-only main update, then record the actual hosted skip evidence and final result.
