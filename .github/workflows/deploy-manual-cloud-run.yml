@@ -7,6 +7,11 @@ on:
         description: "Branch, tag, or SHA to deploy"
         required: true
         default: "main"
+      diagnose_only:
+        description: "Read-only service/domain/billing status and sanitized logs; skip deployment"
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -26,7 +31,29 @@ env:
   WEB_SERVICE: midas-dash-web
 
 jobs:
+  diagnose:
+    if: inputs.diagnose_only == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.git_ref }}
+          persist-credentials: false
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          install_components: beta
+      - name: Read existing deployment state without printing secrets or private URLs
+        run: node scripts/cloud-run-diagnose.mjs
+
   deploy:
+    if: inputs.diagnose_only != true
     runs-on: ubuntu-latest
     concurrency:
       group: midas-dash-manual-cloud-run
