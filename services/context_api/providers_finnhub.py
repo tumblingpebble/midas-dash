@@ -74,7 +74,13 @@ def fetch_headlines(ticker: str, limit: int = 3) -> List[Dict[str, str]]:
 
     today = datetime.now(timezone.utc).date()
     frm   = today - timedelta(days=7)
-    raw = _http_get("/company-news", {"symbol": t, "from": frm.isoformat(), "to": today.isoformat()})
+    try:
+        raw = _http_get("/company-news", {"symbol": t, "from": frm.isoformat(), "to": today.isoformat()})
+    except httpx.HTTPStatusError as exc:
+        # HTTPX exception text can contain the token-bearing request URL.
+        raise FHError(f"headline HTTP status {exc.response.status_code}") from None
+    except httpx.TransportError as exc:
+        raise FHError(f"headline transport failure: {type(exc).__name__}") from None
     items: List[Dict[str,str]] = []
     if isinstance(raw, list):
         for n in raw:

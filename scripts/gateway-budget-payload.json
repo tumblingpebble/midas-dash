@@ -1,0 +1,70 @@
+{
+  "ticker": "TEST",
+  "company_name": "TEST",
+  "features": {
+    "sent_mean": 0.1
+  },
+  "recommendation": {
+    "class": "NO_ACTION",
+    "confidence": 0.7,
+    "version": "fixture"
+  },
+  "one_liner": {
+    "text": "Fixture source",
+    "refs_numbers": []
+  },
+  "quote": {
+    "last": 0
+  },
+  "top_headline": null,
+  "refs": [],
+  "refs_sources": [],
+  "sentiment": {
+    "engine": "finbert",
+    "warning": null,
+    "confidence": 0.8,
+    "model_version": "fixture"
+  },
+  "ts_ctx": "2026-11-09T00:00:00Z",
+  "ts_gateway": "fixed",
+  "cache_age_seconds": 0,
+  "trade_plan": {
+    "ticker": "TEST",
+    "strategy_family": "NO_ACTION",
+    "confidence_bucket": "moderate",
+    "watchouts": [
+      "Last price is not a direct real-time quote, so timing should be treated more cautiously."
+    ],
+    "education": {
+      "terms": {
+        "DTE": "Days to expiration: how many days remain before the option expires."
+      }
+    },
+    "instrument": "none",
+    "instrument_label": "Wait / watchlist",
+    "summary": "The model does not currently see enough short-term edge to justify a trade plan.",
+    "entry_plan": {
+      "plain_english": "Do not force a trade. Wait for stronger momentum, fresher confirmation, or a clearer signal."
+    },
+    "watch_trigger": {
+      "plain_english": "Wait for the setup to become more directional or clearer before taking action.",
+      "examples": [
+        "stronger short-term move in r_1m or r_5m",
+        "fresh relevant headlines",
+        "signal upgrade from NO_ACTION to a directional setup"
+      ]
+    },
+    "hold_plan": {
+      "window": "No active hold window",
+      "plain_english": "This is a wait state, not an entry signal."
+    },
+    "exit_rules": {
+      "take_profit": "Not applicable.",
+      "risk_exit": "Not applicable.",
+      "time_exit": "Re-check later instead of forcing a trade now."
+    }
+  },
+  "explain": {
+    "fixture": true
+  }
+}

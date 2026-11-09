@@ -22,9 +22,11 @@ def features_stub(ticker: str):
 @app.get("/api/features/v2")
 def features_v2(ticker: str):
     try:
-        payload = build_features_for(ticker)
+        payload = dict(build_features_for(ticker))
         payload["ticker"] = ticker
-        payload["ts"] = ts_utc_now()
+        served_at = ts_utc_now()
+        payload.setdefault("ts", served_at)
+        payload["served_at"] = served_at
         return payload
     except Exception as e:
         # degrade gracefully

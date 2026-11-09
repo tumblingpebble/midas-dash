@@ -1,3 +1,5 @@
+import { isRunSnapshot } from "../lib/storedRun"
+
 export type OptionChainCandidate = {
   contract_symbol?: string
   side?: string
@@ -143,7 +145,7 @@ function apiBaseUrl(): string {
 
 export async function runMidas(
   ticker: string,
-  opts?: { explain?: boolean },
+  opts?: { explain?: boolean; signal?: AbortSignal },
 ): Promise<MidasRunResponse> {
   const t = ticker.trim().toUpperCase()
   const base = apiBaseUrl()
@@ -155,7 +157,7 @@ export async function runMidas(
 
   const url = base ? `${base}${path}` : path
 
-  const res = await fetch(url)
+  const res = await fetch(url, { signal: opts?.signal })
   if (!res.ok) {
     let message = `Request failed with HTTP ${res.status}`
 
@@ -174,5 +176,18 @@ export async function runMidas(
     throw new Error(message)
   }
 
-  return res.json()
+  const invalidResponse = "The server returned an invalid run response. Please try again."
+  let body: unknown
+  try {
+    body = await res.json()
+  } catch (error) {
+    // Preserve transport/abort failures; only malformed JSON is a shape error.
+    if (error instanceof SyntaxError) throw new Error(invalidResponse)
+    throw error
+  }
+  // A well-shaped response still belongs to this request only if its ticker matches.
+  if (!isRunSnapshot(body) || body.ticker.trim().toUpperCase() !== t) {
+    throw new Error(invalidResponse)
+  }
+  return body
 }

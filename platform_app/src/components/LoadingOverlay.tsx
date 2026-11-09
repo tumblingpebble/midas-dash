@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 
 type Props = {
   show: boolean
+  onCancel?: () => void
 }
 
 const MESSAGES = [
@@ -15,24 +16,21 @@ const MESSAGES = [
   "Reconciling news + price…",
 ]
 
-export function LoadingOverlay({ show }: Props) {
-  const [idx, setIdx] = useState(0)
+export function LoadingOverlay({ show, onCancel }: Props) {
+  return show ? <LoadingContent onCancel={onCancel} /> : null
+}
 
-  // Shuffle-ish start so it doesn't always begin the same
-  const startIdx = useMemo(() => Math.floor(Math.random() * MESSAGES.length), [])
+function LoadingContent({ onCancel }: Pick<Props, "onCancel">) {
+  // Each loading session owns its initial message and interval.
+  const [idx, setIdx] = useState(() => Math.floor(Math.random() * MESSAGES.length))
 
   useEffect(() => {
-    if (!show) return
-
-    setIdx(startIdx)
     const id = window.setInterval(() => {
       setIdx((prev) => (prev + 1) % MESSAGES.length)
     }, 850)
 
     return () => window.clearInterval(id)
-  }, [show, startIdx])
-
-  if (!show) return null
+  }, [])
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 backdrop-blur-sm">
@@ -48,6 +46,16 @@ export function LoadingOverlay({ show }: Props) {
         <div className="mt-4 h-2 w-full overflow-hidden rounded bg-slate-800">
           <div className="h-2 w-1/2 animate-[midasbar_1.2s_ease-in-out_infinite] bg-amber-500" />
         </div>
+
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="mt-4 rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-amber-400 hover:text-amber-100"
+          >
+            Cancel run
+          </button>
+        )}
 
         <div className="mt-3 text-xs text-slate-400">
           Tip: toggle ML Explain in <span className="text-slate-200">Settings</span> to see why a strategy was chosen.

@@ -7,6 +7,11 @@ on:
         description: "Branch, tag, or SHA to deploy"
         required: true
         default: "main"
+      allow_degraded_sentiment:
+        description: "Explicitly accept learned SetFit fallback (never lexicon); reported as degraded"
+        type: boolean
+        required: false
+        default: false
       diagnose_only:
         description: "Read-only service/domain/billing status and sanitized logs; skip deployment"
         type: boolean
@@ -55,8 +60,13 @@ jobs:
         run: node scripts/cloud-run-diagnose.mjs
 
   deploy:
+    env:
+      ALLOW_DEGRADED_SENTIMENT: ${{ inputs.allow_degraded_sentiment && 'true' || 'false' }}
     if: inputs.diagnose_only != true
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
     concurrency:
       group: midas-dash-manual-cloud-run
       cancel-in-progress: false
@@ -67,6 +77,9 @@ jobs:
         with:
           ref: ${{ github.event.inputs.git_ref }}
           lfs: true
+
+      - name: Verify deployment contracts offline
+        run: node --test scripts/deploy-contract.test.mjs
 
       - name: Pull Git LFS files
         run: |
@@ -105,21 +118,23 @@ jobs:
       - name: Set deploy metadata
         shell: bash
         run: |
-          echo "SHORT_SHA=${GITHUB_SHA::7}" >> "${GITHUB_ENV}"
+          SOURCE_SHA="$(git rev-parse --verify HEAD^{commit})"
+          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]] || exit 1
+          echo "SOURCE_SHA=$SOURCE_SHA" >> "${GITHUB_ENV}"
           echo "IMAGE_PREFIX=${AR_HOST}/${PROJECT_ID}/${AR_REPO}" >> "${GITHUB_ENV}"
 
       - name: Build and push sentiment-api image
         run: |
           docker build \
             -f services/Dockerfile.sentiment \
-            -t "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}" \
+            -t "${IMAGE_PREFIX}/sentiment-api:${SOURCE_SHA}" \
             .
-          docker push "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}"
+          docker push "${IMAGE_PREFIX}/sentiment-api:${SOURCE_SHA}"
 
       - name: Deploy sentiment-api
         run: |
           gcloud run deploy "${SENTIMENT_SERVICE}" \
-            --image "${IMAGE_PREFIX}/sentiment-api:${SHORT_SHA}" \
+            --image "${IMAGE_PREFIX}/sentiment-api:${SOURCE_SHA}" \
             --region "${REGION}" \
             --project "${PROJECT_ID}" \
             --platform managed \
@@ -130,7 +145,7 @@ jobs:
             --concurrency 10 \
             --min-instances 1 \
             --timeout 300 \
-            --set-env-vars "SENT_TTL_S=90"
+            --update-env-vars "SENT_TTL_S=90"
 
       - name: Capture sentiment-api URL
         shell: bash
@@ -144,11 +159,12 @@ jobs:
 
       - name: Smoke test sentiment-api
         run: |
-          curl -fsS "${SENT_URL}/openapi.json" | grep -q '"title":"MIDAS Sentiment API"'
+          curl -fsS "${SENT_URL}/readyz" | node scripts/deploy-contract.mjs ready
+          curl -fsS "${SENT_URL}/openapi.json" | node scripts/deploy-contract.mjs openapi "MIDAS Sentiment API"
           curl -fsS "${SENT_URL}/api/sentiment" \
             -H 'Content-Type: application/json' \
             -d '{"texts":["AAPL beats earnings expectations and rallies on upgrade","Company faces investigation and bearish warning"]}' \
-            | grep -q '"engine"'
+            | node scripts/deploy-contract.mjs sentiment 2
 
       - name: Build and push context-api image
         run: |
@@ -156,20 +172,20 @@ jobs:
             -f services/Dockerfile \
             --build-arg REQ_FILE=requirements.base.txt \
             --build-arg APP_MODULE=services.context_api.app:app \
-            -t "${IMAGE_PREFIX}/context-api:${SHORT_SHA}" \
+            -t "${IMAGE_PREFIX}/context-api:${SOURCE_SHA}" \
             .
-          docker push "${IMAGE_PREFIX}/context-api:${SHORT_SHA}"
+          docker push "${IMAGE_PREFIX}/context-api:${SOURCE_SHA}"
 
       - name: Deploy context-api in live mode
         run: |
           gcloud run deploy "${CONTEXT_SERVICE}" \
-            --image "${IMAGE_PREFIX}/context-api:${SHORT_SHA}" \
+            --image "${IMAGE_PREFIX}/context-api:${SOURCE_SHA}" \
             --region "${REGION}" \
             --project "${PROJECT_ID}" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars "LIVE_PROVIDERS=1,SENT_URL=${SENT_URL},SENT_TIMEOUT_S=20" \
+            --update-env-vars "LIVE_PROVIDERS=1,SENT_URL=${SENT_URL},SENT_TIMEOUT_S=20" \
             --update-secrets "FINNHUB_TOKEN=FINNHUB_TOKEN:1,TIINGO_TOKEN=TIINGO_TOKEN:1"
 
       - name: Capture context-api URL
@@ -184,9 +200,9 @@ jobs:
 
       - name: Smoke test context-api
         run: |
-          curl -fsS "${CONTEXT_URL}/openapi.json" | grep -q '"title":"MIDAS Context API"'
-          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=AAPL" | grep -q '"features"'
-          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | grep -q '"sentiment"'
+          curl -fsS "${CONTEXT_URL}/openapi.json" | node scripts/deploy-contract.mjs openapi "MIDAS Context API"
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=AAPL" | node scripts/deploy-contract.mjs context AAPL
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | node scripts/deploy-contract.mjs context BAC
 
       - name: Build and push recommender-api image
         run: |
@@ -194,14 +210,14 @@ jobs:
             -f services/Dockerfile \
             --build-arg REQ_FILE=requirements.base.txt \
             --build-arg APP_MODULE=services.recommender_api.app:app \
-            -t "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}" \
+            -t "${IMAGE_PREFIX}/recommender-api:${SOURCE_SHA}" \
             .
-          docker push "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}"
+          docker push "${IMAGE_PREFIX}/recommender-api:${SOURCE_SHA}"
 
       - name: Deploy recommender-api
         run: |
           gcloud run deploy "${RECOMMENDER_SERVICE}" \
-            --image "${IMAGE_PREFIX}/recommender-api:${SHORT_SHA}" \
+            --image "${IMAGE_PREFIX}/recommender-api:${SOURCE_SHA}" \
             --region "${REGION}" \
             --project "${PROJECT_ID}" \
             --platform managed \
@@ -220,7 +236,7 @@ jobs:
 
       - name: Smoke test recommender-api
         run: |
-          curl -fsS "${RECOMMENDER_URL}/openapi.json" | grep -q '"title":"MIDAS Recommender API"'
+          curl -fsS "${RECOMMENDER_URL}/openapi.json" | node scripts/deploy-contract.mjs openapi "MIDAS Recommender API"
 
       - name: Build and push gateway-api image
         run: |
@@ -228,20 +244,20 @@ jobs:
             -f services/Dockerfile \
             --build-arg REQ_FILE=requirements.base.txt \
             --build-arg APP_MODULE=services.gateway_api.app:app \
-            -t "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}" \
+            -t "${IMAGE_PREFIX}/gateway-api:${SOURCE_SHA}" \
             .
-          docker push "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}"
+          docker push "${IMAGE_PREFIX}/gateway-api:${SOURCE_SHA}"
 
       - name: Deploy gateway-api
         run: |
           gcloud run deploy "${GATEWAY_SERVICE}" \
-            --image "${IMAGE_PREFIX}/gateway-api:${SHORT_SHA}" \
+            --image "${IMAGE_PREFIX}/gateway-api:${SOURCE_SHA}" \
             --region "${REGION}" \
             --project "${PROJECT_ID}" \
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars "CTX_URL=${CONTEXT_URL},REC_URL=${RECOMMENDER_URL},ALLOW_ORIGINS=*"
+            --update-env-vars "CTX_URL=${CONTEXT_URL},REC_URL=${RECOMMENDER_URL},ALLOW_ORIGINS=*"
 
       - name: Capture gateway-api URL
         shell: bash
@@ -255,23 +271,23 @@ jobs:
 
       - name: Smoke test gateway-api
         run: |
-          curl -fsS "${GATEWAY_URL}/openapi.json" | grep -q '"title":"MIDAS Gateway API"'
-          curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | grep -q '"recommendation"'
-          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | grep -q '"sentiment"'
+          curl -fsS "${GATEWAY_URL}/openapi.json" | node scripts/deploy-contract.mjs openapi "MIDAS Gateway API"
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=AAPL&explain=1" | node scripts/deploy-contract.mjs gateway AAPL
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | node scripts/deploy-contract.mjs gateway BAC
 
       - name: Build and push web image
         run: |
           docker build \
             -f platform_app/Dockerfile \
             --build-arg VITE_API_BASE_URL="${GATEWAY_URL}" \
-            -t "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}" \
+            -t "${IMAGE_PREFIX}/midas-dash-web:${SOURCE_SHA}" \
             .
-          docker push "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}"
+          docker push "${IMAGE_PREFIX}/midas-dash-web:${SOURCE_SHA}"
 
       - name: Deploy midas-dash-web
         run: |
           gcloud run deploy "${WEB_SERVICE}" \
-            --image "${IMAGE_PREFIX}/midas-dash-web:${SHORT_SHA}" \
+            --image "${IMAGE_PREFIX}/midas-dash-web:${SOURCE_SHA}" \
             --region "${REGION}" \
             --project "${PROJECT_ID}" \
             --platform managed \
@@ -294,11 +310,12 @@ jobs:
           echo "  midas-dash-web   ${WEB_URL}"
 
           echo
-          curl -I "${WEB_URL}"
+          curl --fail -I "${WEB_URL}"
           echo
+          curl -fsS "${SENT_URL}/readyz" | node scripts/deploy-contract.mjs ready
           curl -fsS "${SENT_URL}/api/sentiment" \
             -H 'Content-Type: application/json' \
             -d '{"texts":["Bank of America (BAC) Remains in Warren Buffett’s Portfolio Since 2011; See Why","This Is Why Jefferies Believes Bank of America Corporation (BAC) Is a Buy","Piper Sandler, Truist Raise Bank of America (BAC) Targets After Q1 Beat"]}' \
-            | grep -q '"engine"'
-          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | grep -q '"sentiment"'
-          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | grep -q '"sentiment"'
+            | node scripts/deploy-contract.mjs sentiment 3
+          curl -fsS "${CONTEXT_URL}/api/features/v2?ticker=BAC" | node scripts/deploy-contract.mjs context BAC
+          curl -fsS "${GATEWAY_URL}/api/run?ticker=BAC&explain=1" | node scripts/deploy-contract.mjs gateway BAC

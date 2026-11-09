@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import os
+import math
 import re
 from functools import lru_cache
+from threading import Lock
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -125,8 +127,17 @@ def rule_gate(text: str, publisher: str = "") -> Tuple[Optional[str], Optional[s
     return None, None
 
 
-@lru_cache(maxsize=1)
+_model_lock = Lock()
+
+
 def get_setfit_model() -> Optional[SetFitModel]:
+    # lru_cache alone permits concurrent executions on a cold cache.
+    with _model_lock:
+        return _load_setfit_model()
+
+
+@lru_cache(maxsize=1)
+def _load_setfit_model() -> Optional[SetFitModel]:
     model_dir = os.getenv("SETFIT_MODEL_DIR", "").strip()
     path = Path(model_dir) if model_dir else _default_model_dir()
 
@@ -139,7 +150,18 @@ def get_setfit_model() -> Optional[SetFitModel]:
         return None
 
 
-def score_with_setfit(text: str, publisher: str = "") -> Dict[str, Any]:
+def validate_model_probabilities(labels, values):
+    """Readiness-only validation of a complete three-class probability row."""
+    labels, values = list(labels), [float(v) for v in values]
+    if len(labels) != 3 or set(labels) != {"positive", "negative", "neutral"} or len(values) != 3:
+        raise ValueError("Invalid sentiment probability schema")
+    if not all(math.isfinite(v) and 0.0 <= v <= 1.0 for v in values):
+        raise ValueError("Invalid sentiment probability value")
+    if not math.isclose(sum(values), 1.0, abs_tol=1e-5):
+        raise ValueError("Sentiment probabilities are not normalized")
+
+
+def score_with_setfit(text: str, publisher: str = "", *, validate: bool = False) -> Dict[str, Any]:
     gated_label, gated_reason = rule_gate(text, publisher)
     if gated_label is not None:
         return {
@@ -161,6 +183,8 @@ def score_with_setfit(text: str, publisher: str = "") -> Dict[str, Any]:
 
     probs_raw = model.predict_proba([text])[0]
     labels = list(model.labels)
+    if validate:
+        validate_model_probabilities(labels, probs_raw)
     probs = {label: float(p) for label, p in zip(labels, probs_raw)}
 
     # make sure 3 keys are always present

@@ -34,6 +34,9 @@ jobs:
         id: scope
         run: node scripts/ci-scope.mjs
 
+      - name: Verify deployment contracts offline
+        run: node --test scripts/deploy-contract.test.mjs
+
       - name: Verify CI scope safeguards
         run: node --test scripts/ci-scope.test.mjs
 
@@ -53,11 +56,14 @@ jobs:
           done
           docker compose --env-file /dev/null -p midas-dash-mock -f docker-compose.mock.yml up -d --no-build --wait --wait-timeout 180 context_api recommender_api gateway_api
 
-      - name: Install and build mock frontend
+      - name: Install, test, lint and build mock frontend
         if: steps.scope.outputs.full == 'true'
         working-directory: platform_app
         run: |
           npm ci
+          npm run test:storage
+          npm run test:run
+          npm run lint -- --max-warnings 0
           npm run build -- --config vite.mock.config.ts
 
       - name: Start mock frontend and wait for readiness
@@ -152,6 +158,33 @@ jobs:
           for service in context_api recommender_api gateway_api sentiment_api midas_dash; do
             docker compose --env-file /dev/null -p midas-dash -f docker-compose.yml build "$service"
           done
+
+      - name: Verify gateway request budgets offline
+        if: needs.compose-smoke.outputs.full == 'true'
+        timeout-minutes: 3
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            -e PYTHONPATH=/app \
+            --mount "type=bind,source=$(pwd)/scripts/gateway-budget-test.py,target=/tmp/gateway-budget-test.py,readonly" \
+            --mount "type=bind,source=$(pwd)/scripts/gateway-budget-payload.json,target=/tmp/gateway-budget-payload.json,readonly" \
+            midas-dash-gateway_api:latest python -B /tmp/gateway-budget-test.py
+
+      - name: Verify headline fallback regressions offline
+        if: needs.compose-smoke.outputs.full == 'true'
+        run: |
+          docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges \
+            -e PYTHONPATH=/app \
+            --mount "type=bind,source=$(pwd)/scripts/headline-fallback-test.py,target=/tmp/headline-fallback-test.py,readonly" \
+            midas-dash-context_api:latest python -B /tmp/headline-fallback-test.py
+
+      - name: Verify sentiment readiness regressions offline
+        if: needs.compose-smoke.outputs.full == 'true'
+        run: |
+          docker run --rm --network none \
+            -e HF_HUB_OFFLINE=1 -e TRANSFORMERS_OFFLINE=1 -e PYTHONPATH=/app \
+            --mount "type=bind,source=$(pwd)/services,target=/app/services,readonly" \
+            --mount "type=bind,source=$(pwd)/scripts/sentiment-readiness-test.py,target=/tmp/sentiment-readiness-test.py,readonly" \
+            midas-dash-sentiment_api:latest python -B /tmp/sentiment-readiness-test.py
 
       - name: Verify sentiment models offline
         if: needs.compose-smoke.outputs.full == 'true'

@@ -1,7 +1,10 @@
 import { useNavigate } from "react-router-dom"
 import { useRunHistory } from "../hooks/useRunHistory"
+import { browserStorage } from "../lib/browserStorage"
+import type { MidasRunResponse } from "../api/midas"
 
 const LS_LAST_RUN = "midas_dash_last_run_v1"
+const LS_TICKER = "midas_dash_last_ticker_v1"
 
 const stripBracketRefs = (text: string) =>
   text.replace(/\(\[[0-9]+\](\[[0-9]+\])*\)/g, "").trim()
@@ -10,8 +13,9 @@ export function HistoryPage() {
   const history = useRunHistory()
   const navigate = useNavigate()
 
-  function openSnapshot(raw: unknown) {
-    localStorage.setItem(LS_LAST_RUN, JSON.stringify(raw))
+  function openSnapshot(raw: MidasRunResponse) {
+    browserStorage.setJson(LS_LAST_RUN, raw)
+    browserStorage.setItem(LS_TICKER, raw.ticker.trim().toUpperCase())
     navigate("/")
   }
 

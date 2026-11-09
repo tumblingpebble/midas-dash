@@ -27,6 +27,10 @@ def bounded(value, lower, upper, label):
     assert math.isfinite(value) and lower <= value <= upper, f"Invalid {label}"
     return value
 
+assert sentiment.pipe is None, "Import should not initialize FinBERT"
+assert sentiment.healthz()["check"] == "liveness"
+assert sentiment.pipe is None, "Liveness initialized FinBERT"
+assert sentiment.readyz()["status"] == "ready", "FinBERT readiness probe failed"
 assert sentiment.get_pipe() is not None, f"FinBERT failed to load: {sentiment.pipe_disabled_reason}"
 result = sentiment.analyze(sentiment.SentIn(texts=texts))
 assert result["engine"] == "finbert", "FinBERT inference silently fell back"
@@ -68,3 +72,8 @@ for sample in fallback["samples"]:
     bounded(sample, -1, 1, "SetFit fallback sample")
 bounded(fallback["confidence"], 0, 1, "SetFit fallback confidence")
 print("PASS: sentiment API SetFit fallback synthetic inference", flush=True)
+
+assert sentiment.readyz()["status"] == "degraded", "Working SetFit fallback must report degraded readiness"
+assert fallback["warning"] == "acceptance_forced_finbert_unavailable"
+assert fallback["sample_engines"] == ["setfit_fallback"] * len(texts)
+print("PASS: readiness and liveness contract", flush=True)

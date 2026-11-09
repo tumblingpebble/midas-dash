@@ -1,11 +1,13 @@
-import { useState } from "react"
-import { runMidas, type MidasRunResponse } from "../api/midas"
+import { useEffect, useRef, useState } from "react"
+import { runMidas, type MidasRunResponse, type OptionChainPlan } from "../api/midas"
 import { toHistoryItem, useRunHistory } from "../hooks/useRunHistory"
 import { useNow } from "../hooks/useNow"
 import { useSettings } from "../hooks/useSettings"
 import { LoadingOverlay } from "../components/LoadingOverlay"
 import { MidasCanvas } from "../components/MidasCanvas"
 import { InfoTooltip } from "../components/InfoTooltip"
+import { browserStorage } from "../lib/browserStorage"
+import { parseStoredRun } from "../lib/storedRun"
 
 const LS_TICKER = "midas_dash_last_ticker_v1"
 const LS_LAST_RUN = "midas_dash_last_run_v1"
@@ -93,17 +95,11 @@ const OPTION_TABLE_TOOLTIPS: Record<string, { label: string; help: string }> = {
 }
 
 function loadTicker(): string {
-  return localStorage.getItem(LS_TICKER) ?? "AAPL"
+  return browserStorage.getItem(LS_TICKER) ?? "AAPL"
 }
 
 function loadLastRun(): MidasRunResponse | null {
-  const raw = localStorage.getItem(LS_LAST_RUN)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as MidasRunResponse
-  } catch {
-    return null
-  }
+  return parseStoredRun(browserStorage.getItem(LS_LAST_RUN))
 }
 
 function stripBracketRefs(text: string): string {
@@ -371,7 +367,7 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
                   <div key={key} className="flex min-w-0 flex-wrap gap-2">
                     <FeatureLabel feature={key} />
                     <span className="text-slate-400">:</span>
-                    <span className="min-w-0 break-all text-slate-200">{String(value)}</span>
+                    <span className="min-w-0 break-all text-slate-200">{value !== null && typeof value === "object" ? JSON.stringify(value) : String(value)}</span>
                   </div>
                 ))}
               </div>
@@ -384,7 +380,7 @@ function ExplainPanel({ run }: { run: MidasRunResponse }) {
   )
 }
 
-function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
+function CandidateContracts({ optionChainPlan }: { optionChainPlan?: OptionChainPlan }) {
   if (!optionChainPlan?.available || !optionChainPlan?.candidates?.length) {
     return (
       <div className="mt-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-400">
@@ -411,7 +407,7 @@ function CandidateContracts({ optionChainPlan }: { optionChainPlan: any }) {
           </tr>
         </thead>
         <tbody>
-          {optionChainPlan.candidates.map((c: any) => (
+          {optionChainPlan.candidates.map((c) => (
             <tr key={c.contract_symbol} className="border-b border-slate-900 text-slate-200">
               <td className="px-2 py-2">{c.role}</td>
               <td className="px-2 py-2">{c.side}</td>
@@ -624,46 +620,70 @@ export function RunPage() {
   const [loading, setLoading] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [data, setData] = useState<MidasRunResponse | null>(loadLastRun)
+  const activeRun = useRef<AbortController | null>(null)
+
+  useEffect(() => () => {
+    // Navigation invalidates the request before abort callbacks can settle it.
+    const request = activeRun.current
+    activeRun.current = null
+    request?.abort()
+  }, [])
 
   const history = useRunHistory()
   const nowMs = useNow(1000)
   const { settings } = useSettings()
 
   async function onRun() {
+    // A ref also guards repeated Enter/click events before React renders loading.
+    if (activeRun.current) return
     const t = ticker.trim().toUpperCase()
-    localStorage.setItem(LS_TICKER, t)
+    browserStorage.setItem(LS_TICKER, t)
 
-    if (!/^[A-Z.\-]{1,10}$/.test(t)) {
+    if (!/^[A-Z.-]{1,10}$/.test(t)) {
       setErr("Ticker should look like AAPL, MSFT, BRK.B, etc.")
       return
     }
 
+    const request = new AbortController()
+    activeRun.current = request
     setErr(null)
     setLoading(true)
 
     try {
-      const out = await runMidas(t, { explain: settings.enableExplain })
+      const out = await runMidas(t, { explain: settings.enableExplain, signal: request.signal })
+      if (activeRun.current !== request) return
       setData(out)
-      localStorage.setItem(LS_LAST_RUN, JSON.stringify(out))
+      browserStorage.setJson(LS_LAST_RUN, out)
       history.add(toHistoryItem(out))
     } catch (e) {
+      if (activeRun.current !== request) return
       setErr(e instanceof Error ? e.message : String(e))
       setData(null)
-      localStorage.removeItem(LS_LAST_RUN)
+      browserStorage.removeItem(LS_LAST_RUN)
     } finally {
-      setLoading(false)
+      if (activeRun.current === request) {
+        activeRun.current = null
+        setLoading(false)
+      }
     }
+  }
+
+  function cancelRun() {
+    const request = activeRun.current
+    activeRun.current = null
+    request?.abort()
+    setLoading(false)
   }
 
   function clearCurrentRun() {
     setData(null)
     setErr(null)
-    localStorage.removeItem(LS_LAST_RUN)
+    browserStorage.removeItem(LS_LAST_RUN)
   }
 
   return (
     <main className="mx-auto w-full max-w-5xl min-w-0 overflow-x-hidden px-4 py-6">
-      <LoadingOverlay show={loading} />
+      <LoadingOverlay show={loading} onCancel={cancelRun} />
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">
         <section className="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-4 lg:col-span-1">
@@ -672,10 +692,11 @@ export function RunPage() {
           <div className="mt-4 flex max-w-full flex-wrap gap-2">
             <input
               value={ticker}
+              disabled={loading}
               onChange={(e) => {
                 const v = e.target.value
                 setTicker(v)
-                localStorage.setItem(LS_TICKER, v.trim().toUpperCase())
+                browserStorage.setItem(LS_TICKER, v.trim().toUpperCase())
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") onRun()

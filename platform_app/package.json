@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test:storage": "node --test ../scripts/browser-storage.test.mjs",
+    "test:run": "node --test ../scripts/run-lifecycle.test.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },

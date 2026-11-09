@@ -18,7 +18,9 @@ def get_cached(ticker: str) -> Optional[dict]:
         return None
     ts_epoch, payload = hit
     if (time.time() - ts_epoch) <= TTL_S:
-        # annotate (optional)
+        # Annotate a response copy without mutating the cached payload.
+        payload = dict(payload)
+        payload["_cache"] = dict(payload.get("_cache", {}))
         payload.setdefault("_cache", {})["age_s"] = int(time.time() - ts_epoch)
         payload["_cache"]["ttl_s"] = int(TTL_S)
         payload["_cache"]["hit"] = True
