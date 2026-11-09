@@ -40,6 +40,8 @@ jobs:
         with:
           ref: ${{ github.event.inputs.git_ref }}
           persist-credentials: false
+      - name: Verify diagnostic scope and output sanitization
+        run: node --test scripts/cloud-run-diagnose.test.mjs
       - uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.WIF_PROVIDER }}

@@ -7,10 +7,10 @@ const region = process.env.REGION;
 if (!project || !region) throw new Error('PROJECT_ID and REGION are required');
 const services = ['sentiment-api', 'context-api', 'recommender-api', 'gateway-api', 'midas-dash-web'];
 const categories = [
-  ['billing-disabled', /billing.{0,60}(disabled|closed|suspended)|BILLING_DISABLED/i],
+  ['billing-disabled', /BILLING_DISABLED|billing(?: account)? (?:is|has been) (?:disabled|closed|suspended)/i],
   ['permission-denied', /PERMISSION_DENIED|permission.{0,30}denied|does not have permission/i],
   ['api-disabled', /SERVICE_DISABLED|API.{0,60}(disabled|not been used)/i],
-  ['project-disabled', /SYSTEM_DISABLED|project.{0,60}(suspended|disabled)/i],
+  ['project-disabled', /SYSTEM_DISABLED|PROJECT_SUSPENDED|project (?:is|has been) (?:suspended|disabled)/i],
   ['no-available-instance', /no available instance/i],
   ['memory-limit', /memory limit|out of memory|OOMKilled/i],
   ['container-start-failed', /failed to start|failed to listen|ContainerMissing|ContainerFailed/i],
