@@ -1,0 +1,39 @@
+https://{$MIDAS_PRIVATE_HOST} {
+    route {
+        # Basic-auth credentials are ambient. Reject browser cross-site API use,
+        # but permit navigation from a CV link to the authenticated frontend.
+        @cross_site_api {
+            path /api /api/* /healthz
+            header_regexp Sec-Fetch-Site "^(cross-site|same-site)$"
+        }
+        respond @cross_site_api "Cross-origin API requests are not allowed" 403
+        @foreign_origin_api {
+            path /api /api/* /healthz
+            header Origin *
+            not header Origin https://{$MIDAS_PRIVATE_HOST}
+        }
+        respond @foreign_origin_api "Cross-origin API requests are not allowed" 403
+
+        basic_auth {
+            import /run/midas-auth/users.caddy
+        }
+        header {
+            defer
+            Cache-Control "no-store"
+            X-Content-Type-Options "nosniff"
+            X-Frame-Options "DENY"
+            Referrer-Policy "no-referrer"
+            Content-Security-Policy "frame-ancestors 'none'"
+        }
+        reverse_proxy midas_dash:8080 {
+            header_up -Authorization
+            header_up -Proxy-Authorization
+            header_up -X-Auth-Request-User
+            header_up -X-Forwarded-User
+            header_down -Access-Control-Allow-Origin
+            header_down -Access-Control-Allow-Credentials
+            header_down -Access-Control-Allow-Methods
+            header_down -Access-Control-Allow-Headers
+        }
+    }
+}

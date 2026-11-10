@@ -86,4 +86,16 @@ export function createBrowserStorage(getStorage: () => StorageLike) {
 }
 
 // Access the browser property inside the guarded operation: its getter can throw.
-export const browserStorage = createBrowserStorage(() => globalThis.localStorage)
+// An opt-in private build never reads, writes or deletes existing durable data.
+// This store lasts only for this page instance, not a browser account/session.
+export const privateAccessMode = import.meta.env?.VITE_PRIVATE_ACCESS === "1"
+const privateValues = new Map<string, string>()
+const privateStorage: StorageLike = {
+  getItem: (key) => privateValues.get(key) ?? null,
+  setItem: (key, value) => { privateValues.set(key, value) },
+  removeItem: (key) => { privateValues.delete(key) },
+}
+
+export const browserStorage = createBrowserStorage(
+  () => privateAccessMode ? privateStorage : globalThis.localStorage,
+)

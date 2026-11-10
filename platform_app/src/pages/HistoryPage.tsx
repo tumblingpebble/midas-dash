@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom"
 import { useRunHistory } from "../hooks/useRunHistory"
-import { browserStorage } from "../lib/browserStorage"
+import { browserStorage, privateAccessMode } from "../lib/browserStorage"
 import type { MidasRunResponse } from "../api/midas"
 
 const LS_LAST_RUN = "midas_dash_last_run_v1"
@@ -30,6 +30,13 @@ export function HistoryPage() {
           Clear
         </button>
       </div>
+
+      {privateAccessMode && (
+        <p className="mt-4 text-sm text-slate-300">
+          Private access: history stays in this page only and clears on reload.
+          Previously saved browser history is not loaded or deleted.
+        </p>
+      )}
 
       {history.items.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-slate-300">
