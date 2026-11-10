@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import type { MidasRunResponse } from "../api/midas"
+import { browserStorage } from "../lib/browserStorage"
+import { isRecord, isRunSnapshot } from "../lib/storedRun"
 
 export type RunHistoryItem = {
   id: string
@@ -17,25 +19,57 @@ export type RunHistoryItem = {
 const KEY = "midas_dash_history_v1"
 const MAX_ITEMS = 25
 
+function optionalText(value: unknown): boolean {
+  return value == null || typeof value === "string"
+}
+
+function isHistoryItem(item: unknown): item is RunHistoryItem {
+  if (!isRecord(item)) return false
+  return (
+    typeof item.id === "string" &&
+    typeof item.ts === "string" &&
+    typeof item.ticker === "string" &&
+    typeof item.recommendationClass === "string" &&
+    typeof item.confidence === "number" &&
+    Number.isFinite(item.confidence) &&
+    isRunSnapshot(item.snapshot) &&
+    optionalText(item.oneLiner) &&
+    optionalText(item.headlineTitle) &&
+    optionalText(item.headlineUrl) &&
+    (item.refsNumbers == null ||
+      (Array.isArray(item.refsNumbers) &&
+        item.refsNumbers.every((ref: unknown) =>
+          isRecord(ref) &&
+          typeof ref.n === "number" && Number.isFinite(ref.n) &&
+          typeof ref.url === "string",
+        )))
+  )
+}
+
 function safeParse(raw: string | null): RunHistoryItem[] {
   if (!raw) return []
   try {
-    const x = JSON.parse(raw)
+    const x: unknown = JSON.parse(raw)
     if (!Array.isArray(x)) return []
 
-    return x.filter((item) => {
-      return (
-        item &&
-        typeof item === "object" &&
-        typeof item.id === "string" &&
-        typeof item.ticker === "string" &&
-        item.snapshot &&
-        typeof item.snapshot === "object"
-      )
-    }) as RunHistoryItem[]
+    return x.filter(isHistoryItem)
   } catch {
     return []
   }
+}
+
+// This bounded summary composes without retaining an operation per add. With
+// 25 distinct newer IDs, no older row could survive the final history limit.
+export function mergeHistory(newer: string, older: string | null): string {
+  const seen = new Set<string>()
+  const result: RunHistoryItem[] = []
+  for (const row of [...safeParse(newer), ...safeParse(older)]) {
+    if (seen.has(row.id)) continue
+    seen.add(row.id)
+    result.push(row)
+    if (result.length === MAX_ITEMS) break
+  }
+  return JSON.stringify(result)
 }
 
 export function toHistoryItem(run: MidasRunResponse): RunHistoryItem {
@@ -56,19 +90,20 @@ export function toHistoryItem(run: MidasRunResponse): RunHistoryItem {
 
 export function useRunHistory() {
   const [items, setItems] = useState<RunHistoryItem[]>(() =>
-    safeParse(localStorage.getItem(KEY)),
+    safeParse(browserStorage.getItem(KEY)),
   )
-
-  useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(items))
-  }, [items])
-
   const api = useMemo(
     () => ({
       items,
-      add: (item: RunHistoryItem) =>
-        setItems((prev) => [item, ...prev].slice(0, MAX_ITEMS)),
-      clear: () => setItems([]),
+      add: (item: RunHistoryItem) => {
+        const value = browserStorage.mergeItem(KEY, JSON.stringify([item]), mergeHistory)
+        setItems(safeParse(value))
+      },
+      clear: () => {
+        // Explicit clear supersedes deferred adds, including unread durable rows.
+        browserStorage.setJson(KEY, [])
+        setItems([])
+      },
     }),
     [items],
   )

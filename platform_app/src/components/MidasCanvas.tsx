@@ -44,7 +44,7 @@ export function MidasCanvas({ run, height = 200 }: Props) {
       rv20,
       quote: Number(run.quote?.last ?? 0),
       quality: String(run.quote?.quality ?? "unknown"),
-      spreadQuality: String((run.quote as any)?.spread_quality ?? "unknown"),
+      spreadQuality: String(run.quote?.spread_quality ?? "unknown"),
       ts: String(run.ts_gateway ?? ""),
     }
   }, [run])

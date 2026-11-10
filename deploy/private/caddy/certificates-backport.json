@@ -1,0 +1,794 @@
+{
+  "upstream_module": "github.com/smallstep/certificates",
+  "upstream_version": "v0.30.2",
+  "upstream_commit": "6e8ec61405239cf3f37b2bbf260a587b7d2e4e31",
+  "upstream_zip_sha256": "7f8d8b9bc0ff69bed8334750b41a486f1d942c5993be8ab3b399a6b8a3d790e4",
+  "migration_commit": "cddde30af36e238f156bb557bfd1f11a05ffe6f9",
+  "omitted_absent_test_hunks": [
+    "acme/api/eab_test.go:854",
+    "acme/api/eab_test.go:891"
+  ],
+  "identity": "MIDAS-local JOSE migration backport, not upstream v0.30.2 source",
+  "files": [
+    {
+      "path": "acme/api/account_test.go",
+      "exists": true,
+      "before_sha256": "33677d4bafd3cacc67c4ad72f83de131a7c76453cc3b603b074f3bb7ea9a1122",
+      "after_sha256": "0171eeea9e9546351b1b4c996760b1a45ad4894d24403f55592f2c7a4bfac222",
+      "edits": [
+        {
+          "offset": 230,
+          "old": "",
+          "new": "\t\"github.com/stretchr/testify/require\"\n"
+        },
+        {
+          "offset": 257,
+          "old": "",
+          "new": "\t\"go.step.sm/crypto/randutil\"\n"
+        },
+        {
+          "offset": 3234,
+          "old": "",
+          "new": "}\n\nfunc mustHMACKey(t *testing.T, size int) []byte {\n\tt.Helper()\n\tb, err := randutil.Bytes(size)\n\trequire.NoError(t, err)\n\treturn b\n"
+        },
+        {
+          "offset": 16412,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 17479,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 18815,
+          "old": "\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 21994,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 23437,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 25163,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        }
+      ]
+    },
+    {
+      "path": "acme/api/eab_test.go",
+      "exists": true,
+      "before_sha256": "5e54b1778de2525a14db6a68fe18ed17f3452765084146c047831d97709d0fad",
+      "after_sha256": "1959d2c2664ec7617767dad2e201459332994a0cfc0187304907cef25a1c5b4a",
+      "edits": [
+        {
+          "offset": 1969,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 2763,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 4215,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 4578,
+          "old": "\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 4929,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 5957,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 6886,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 8598,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 10300,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 12124,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 13949,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 15795,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 17936,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 19833,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 21405,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 22074,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 23499,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 2, 3, 4},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       mustHMACKey(t, 32),\n"
+        },
+        {
+          "offset": 24195,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(differentJWK, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(differentJWK, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 25629,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 26219,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 27592,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 28176,
+          "old": "\t\t\trawEABJWS, err := createRawEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\thmacKey := mustHMACKey(t, 32)\n\t\t\trawEABJWS, err := createRawEABJWS(jwk, hmacKey, \"eakID\", url)\n"
+        },
+        {
+          "offset": 29601,
+          "old": "\t\t\t\t\t\t\tHmacKey:       []byte{1, 3, 3, 7},\n",
+          "new": "\t\t\t\t\t\t\tHmacKey:       hmacKey,\n"
+        },
+        {
+          "offset": 31962,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 32491,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 33016,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 33517,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 34034,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 34549,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 35093,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 36557,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 37965,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        },
+        {
+          "offset": 39426,
+          "old": "\t\t\teabJWS, err := createEABJWS(jwk, []byte{1, 3, 3, 7}, \"eakID\", url)\n",
+          "new": "\t\t\teabJWS, err := createEABJWS(jwk, mustHMACKey(t, 32), \"eakID\", url)\n"
+        }
+      ]
+    },
+    {
+      "path": "acme/challenge.go",
+      "exists": true,
+      "before_sha256": "527fbc84613fbb7221b738550b8c170bd9d0974c0070943b3370191a317129ee",
+      "after_sha256": "327b4f2a67c187ccf012e78cfaf48ca259773280112d50a20a39d12a1b4183a3",
+      "edits": [
+        {
+          "offset": 21818,
+          "old": "\t\tTime:     v.t,\n\t\tIssuer:   v.issuer,\n\t\tAudience: jose.Audience{v.audience},\n",
+          "new": "\t\tTime:        v.t,\n\t\tIssuer:      v.issuer,\n\t\tAnyAudience: jose.Audience{v.audience},\n"
+        },
+        {
+          "offset": 23567,
+          "old": "\t\tTime:     v.t,\n\t\tAudience: jose.Audience{v.audience},\n",
+          "new": "\t\tTime:        v.t,\n\t\tAnyAudience: jose.Audience{v.audience},\n"
+        }
+      ]
+    },
+    {
+      "path": "acme/challenge_wire_test.go",
+      "exists": true,
+      "before_sha256": "e18e71641b21c18fb4ad72b471b347c8eedb9a9b62cfa3ce38686719a9006894",
+      "after_sha256": "d52683e89b2438ef27e7a30d3187fa20cad435f67c68fea80dbc2a7247bcb6fd",
+      "edits": [
+        {
+          "offset": 9240,
+          "old": "\t\t\t\t\t\t\t\t\tassert.Equal(t, `failed validating Wire access token: failed parsing token: go-jose/go-jose: compact JWS format must have three parts`, k.Err.Error())\n",
+          "new": "\t\t\t\t\t\t\t\t\tassert.Equal(t, `failed validating Wire access token: failed parsing token: go-jose/go-jose: empty input`, k.Err.Error())\n"
+        }
+      ]
+    },
+    {
+      "path": "api/api_test.go",
+      "exists": true,
+      "before_sha256": "97dd271b787ee7a85981c547316ab7a4455072049339b6bda946ee37a35559cd",
+      "after_sha256": "661cd7ed1c8f4ce221f75dafbe264b4f9f7d4f3cb2cf915b1df67af2b817fdbf",
+      "edits": [
+        {
+          "offset": 36819,
+          "old": "\t\ts, err := jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\t\ts, err := jose.Signed(sig).Claims(claims).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/authorize_test.go",
+      "exists": true,
+      "before_sha256": "ea8fbc16ce889f22c8c701aa9a7d167d1aa9cda8d5dec81461b4e1b41b8dd15a",
+      "after_sha256": "8d857a96af44d89f656a341f0740a839e491c2b8c36e6846c84a7bc2763f362d",
+      "edits": [
+        {
+          "offset": 2148,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 2959,
+          "old": "\treturn jose.Signed(sig).Claims(claims).Claims(extraClaims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Claims(extraClaims).Serialize()\n"
+        },
+        {
+          "offset": 4260,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 5033,
+          "old": "\t\t\traw, err := jose.Signed(_sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(_sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 5686,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 6226,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 6725,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 7322,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 7798,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 8561,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 9182,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 9914,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 10471,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 12563,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 13176,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 15013,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 15616,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 17933,
+          "old": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 18842,
+          "old": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 22639,
+          "old": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\ttoken, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 30491,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 32329,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 35437,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 38618,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 41518,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 44438,
+          "old": "\t\ts, err := jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\t\ts, err := jose.Signed(sig).Claims(claims).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/policy_test.go",
+      "exists": true,
+      "before_sha256": "b5b71e64fe38633251ded6bcec1d45aa3ed412e071df784482fdce768ea67a1a",
+      "after_sha256": "359110c773bde7a28734674119544cd06f74073e0f13dbb4e85c8220616dbad5",
+      "edits": [
+        {
+          "offset": 72,
+          "old": "\t\"github.com/go-jose/go-jose/v3\"\n",
+          "new": ""
+        },
+        {
+          "offset": 177,
+          "old": "",
+          "new": "\t\"go.step.sm/crypto/jose\"\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/aws.go",
+      "exists": true,
+      "before_sha256": "44555f3094cff9ad088f6f47bf70bdd2718146cb40382a5f6caef9fe154d8e69",
+      "after_sha256": "d7319540b0869c622fc47323ab1f0d2d56d4f1c8fa29dc76ba81b17c9ea6391e",
+      "edits": [
+        {
+          "offset": 9457,
+          "old": "\ttok, err := jose.Signed(signer).Claims(payload).CompactSerialize()\n",
+          "new": "\ttok, err := jose.Signed(signer).Claims(payload).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/azure.go",
+      "exists": true,
+      "before_sha256": "200f4f9fc40dc79dfacfb8e5411ebc7fb2b894c8d2bd8a300088b455b918bbeb",
+      "after_sha256": "9082fc05de6b2efe9be73f08a9b8ef8c7d88e0f40b419ab9c93a75a36d4557f0",
+      "edits": [
+        {
+          "offset": 9858,
+          "old": "\t\tAudience: []string{p.Audience},\n\t\tIssuer:   p.oidcConfig.Issuer,\n\t\tTime:     time.Now(),\n",
+          "new": "\t\tAnyAudience: []string{p.Audience},\n\t\tIssuer:      p.oidcConfig.Issuer,\n\t\tTime:        time.Now(),\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/azure_test.go",
+      "exists": true,
+      "before_sha256": "a7e460124118896d24f786494fac176bf64ab58ee5aa802e350b313af347e045",
+      "after_sha256": "df07a55deeab093b30cc44e161395dcac52270350ed12afa6045f4e54d7ae71b",
+      "edits": [
+        {
+          "offset": 11523,
+          "old": "\t\t\ttok, err := jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\t\t\ttok, err := jose.Signed(sig).Claims(claims).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/midas_jose_migration_test.go",
+      "exists": false,
+      "before_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "after_sha256": "d62c6410455296497db7cf0c151c8be056d5542f0ad36d78edfec728290a5eb5",
+      "edits": [
+        {
+          "offset": 0,
+          "old": "",
+          "new": "package provisioner\n\nimport (\n\t\"go.step.sm/crypto/jose\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n)\n\n// MIDAS backport regression: a valid signature must not bypass audience validation.\nfunc TestMIDASAzureWrongAudience(t *testing.T) {\n\tp, srv, err := generateAzureWithServer()\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer srv.Close()\n\tfor _, audience := range []string{azureDefaultAudience, \"https://wrong-audience.invalid\", \"\"} {\n\t\ttoken, err := generateAzureToken(\"subject\", p.oidcConfig.Issuer, audience, p.TenantID, \"subscriptionID\", \"resourceGroup\", \"virtualMachine\", \"vm\", time.Now(), &p.keyStore.keySet.Keys[0])\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\t_, _, _, _, _, err = p.authorizeToken(token)\n\t\tif audience == azureDefaultAudience {\n\t\t\tif err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t} else if err == nil || !strings.Contains(err.Error(), \"failed to validate azure token payload\") {\n\t\t\tt.Fatalf(\"wrong/empty audience not rejected at payload validation: %v\", err)\n\t\t}\n\t}\n}\n\nfunc TestMIDASAnyAudienceSemantics(t *testing.T) {\n\tfor _, tc := range []struct {\n\t\tname   string\n\t\tactual jose.Audience\n\t\tvalid  bool\n\t}{\n\t\t{\"match\", jose.Audience{\"expected\"}, true},\n\t\t{\"overlap\", jose.Audience{\"other\", \"expected\"}, true},\n\t\t{\"wrong\", jose.Audience{\"wrong\"}, false},\n\t\t{\"empty\", nil, false},\n\t} {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tclaims := jose.Claims{Audience: tc.actual}\n\t\t\terr := claims.Validate(jose.Expected{AnyAudience: jose.Audience{\"expected\"}})\n\t\t\tif (err == nil) != tc.valid {\n\t\t\t\tt.Fatalf(\"audience validation = %v, want valid %v\", err, tc.valid)\n\t\t\t}\n\t\t})\n\t}\n}\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/nebula_test.go",
+      "exists": true,
+      "before_sha256": "05c9db682278eafb2fb8ca0b5c3ccda93ea8287b4ec0a952d33f5ebe3452175c",
+      "after_sha256": "f0bdacfb2096bf6de52ef53b19ef2685b7f5dddeda2d1cc37bf6e2d47aad682c",
+      "edits": [
+        {
+          "offset": 6004,
+          "old": "\ttok, err := jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\ttok, err := jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 7021,
+          "old": "\ttok, err := jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\ttok, err := jose.Signed(sig).Claims(claims).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/oidc.go",
+      "exists": true,
+      "before_sha256": "830a70c021c1058f6a5bf00ec3a128b883cdf1bf36338f163670ae629844b5b2",
+      "after_sha256": "1a12eda877bfd54b5c27c2081e14d7072b7744610082105ae002924e07a81de6",
+      "edits": [
+        {
+          "offset": 6264,
+          "old": "\t\tIssuer:   o.configuration.Issuer,\n\t\tAudience: jose.Audience{o.ClientID},\n\t\tTime:     time.Now().UTC(),\n",
+          "new": "\t\tIssuer:      o.configuration.Issuer,\n\t\tAnyAudience: jose.Audience{o.ClientID},\n\t\tTime:        time.Now().UTC(),\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/oidc_test.go",
+      "exists": true,
+      "before_sha256": "dd11815955c220f2d430d89a90cb9cd19d70fd93bfd55de4972ce16621cebcda",
+      "after_sha256": "c048861713dda1c6e783e6dd5d4c83b93bff276a01fc3cd5a4f4fedd315d6c0f",
+      "edits": [
+        {
+          "offset": 9406,
+          "old": "\t\t{\"fail-token\", p1, args{failTok}, http.StatusUnauthorized, \"\", errors.New(`oidc.AuthorizeToken; error parsing oidc token: invalid character '~' looking for beginning of value`)},\n",
+          "new": "\t\t{\"fail-token\", p1, args{failTok}, http.StatusUnauthorized, \"\", errors.New(`oidc.AuthorizeToken; error parsing oidc token: go-jose/go-jose: invalid protected header`)},\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/provisioner_test.go",
+      "exists": true,
+      "before_sha256": "388101e90ab043e4b9719e2a1708433d14d9c49486f84fb10957480f6938bd36",
+      "after_sha256": "313279e98d5dc1beedcc446323f0aa51aaab8002daec728b90cd76cafd172dd7",
+      "edits": [
+        {
+          "offset": 75,
+          "old": "\t\"github.com/go-jose/go-jose/v3\"\n",
+          "new": "\t\"github.com/stretchr/testify/assert\"\n\t\"go.step.sm/crypto/jose\"\n\t\"golang.org/x/crypto/ssh\"\n\n"
+        },
+        {
+          "offset": 156,
+          "old": "\t\"github.com/stretchr/testify/assert\"\n\t\"golang.org/x/crypto/ssh\"\n",
+          "new": ""
+        }
+      ]
+    },
+    {
+      "path": "authority/provisioner/utils_test.go",
+      "exists": true,
+      "before_sha256": "1cf3035576b18b1561ce6c49bfa83abf08defb3811dc36b00cd5fb7b36844654",
+      "after_sha256": "dd948b3ec6c8f2272e7df235932593d12f0093647d5b63667756be740a88ed92",
+      "edits": [
+        {
+          "offset": 22362,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 23171,
+          "old": "\treturn jose.Signed(sig).Claims(claims).Claims(extraClaims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Claims(extraClaims).Serialize()\n"
+        },
+        {
+          "offset": 24236,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 24700,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 25470,
+          "old": "\treturn jose.Signed(sig).Claims(*claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(*claims).Serialize()\n"
+        },
+        {
+          "offset": 26796,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 28016,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 29582,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        },
+        {
+          "offset": 30927,
+          "old": "\treturn jose.Signed(sig).Claims(claims).CompactSerialize()\n",
+          "new": "\treturn jose.Signed(sig).Claims(claims).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "authority/tls_test.go",
+      "exists": true,
+      "before_sha256": "1f2d1504c7f182b3dca35c8ed77af8edf7899259d5e1bb0a6a2d36728f19d373",
+      "after_sha256": "8233756cd12081fe70801b765422ddb73ca87e81c4ab9c93e963e3ff396bba50",
+      "edits": [
+        {
+          "offset": 51196,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 52399,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 53588,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 54773,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 55812,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 58189,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 65540,
+          "old": "\t\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 67292,
+          "old": "\t\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "ca/bootstrap_test.go",
+      "exists": true,
+      "before_sha256": "74e219204c1d322b89f55f430bc3c031343c2fba13a864fadfc51dde0fe7d383",
+      "after_sha256": "b84531e4cf241c1ac015e6f3216db75dc2d12b6f5b6d48c7ec31763535c9d2cf",
+      "edits": [
+        {
+          "offset": 3357,
+          "old": "\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "ca/ca_test.go",
+      "exists": true,
+      "before_sha256": "91f64bf9c16104755cb01704795cf77292b86f5aad489deea892c3d031808169",
+      "after_sha256": "7b108422e0d1616dd89e049e011428a9eaf30324067a7e610b1c60b558e9bf99",
+      "edits": [
+        {
+          "offset": 5839,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 6755,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        },
+        {
+          "offset": 7725,
+          "old": "\t\t\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\t\t\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "ca/provisioner_test.go",
+      "exists": true,
+      "before_sha256": "5b58bffb506dc6dcbeec471f0ef7dbf6ad93e81722fcde343526877eede44afc",
+      "after_sha256": "52908f72216669327adbe3f39adcaa380e28da83c2455dfce8f5b7c4a5cb8242",
+      "edits": [
+        {
+          "offset": 7332,
+          "old": "\t\t\t\t\tAudience: []string{\"https://127.0.0.1:9000/1.0/sign\"},\n\t\t\t\t\tIssuer:   tt.fields.name,\n\t\t\t\t\tSubject:  tt.args.subject,\n\t\t\t\t\tTime:     time.Now().UTC(),\n",
+          "new": "\t\t\t\t\tAnyAudience: []string{\"https://127.0.0.1:9000/1.0/sign\"},\n\t\t\t\t\tIssuer:      tt.fields.name,\n\t\t\t\t\tSubject:     tt.args.subject,\n\t\t\t\t\tTime:        time.Now().UTC(),\n"
+        },
+        {
+          "offset": 10573,
+          "old": "\t\t\t\t\tAudience: []string{\"https://[::1]:9000/1.0/sign\"},\n\t\t\t\t\tIssuer:   tt.fields.name,\n\t\t\t\t\tSubject:  tt.args.subject,\n\t\t\t\t\tTime:     time.Now().UTC(),\n",
+          "new": "\t\t\t\t\tAnyAudience: []string{\"https://[::1]:9000/1.0/sign\"},\n\t\t\t\t\tIssuer:      tt.fields.name,\n\t\t\t\t\tSubject:     tt.args.subject,\n\t\t\t\t\tTime:        time.Now().UTC(),\n"
+        },
+        {
+          "offset": 14002,
+          "old": "\t\t\t\t\tAudience: []string{\"https://127.0.0.1:9000/1.0/ssh/sign\"},\n\t\t\t\t\tIssuer:   tt.fields.name,\n\t\t\t\t\tSubject:  tt.args.keyID,\n\t\t\t\t\tTime:     time.Now().UTC(),\n",
+          "new": "\t\t\t\t\tAnyAudience: []string{\"https://127.0.0.1:9000/1.0/ssh/sign\"},\n\t\t\t\t\tIssuer:      tt.fields.name,\n\t\t\t\t\tSubject:     tt.args.keyID,\n\t\t\t\t\tTime:        time.Now().UTC(),\n"
+        }
+      ]
+    },
+    {
+      "path": "ca/tls_test.go",
+      "exists": true,
+      "before_sha256": "033a9476b9699b623962a5b091ee24be00238e4bd377a48ae560131c06a50c8e",
+      "after_sha256": "64474d5f2d7c4ae146eb44df34b99d967340aa36f5ffc15c33ec55e6eda8fe34",
+      "edits": [
+        {
+          "offset": 1190,
+          "old": "\traw, err := jose.Signed(sig).Claims(cl).CompactSerialize()\n",
+          "new": "\traw, err := jose.Signed(sig).Claims(cl).Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "cas/stepcas/jwk_issuer.go",
+      "exists": true,
+      "before_sha256": "92c0d5ab9715f5c51c6e7a56a6b8d3de82ed9f1bf10dd1c6fbc95e70923509c5",
+      "after_sha256": "f52824b88b536c7c9c40445acbf99c1867baa31550f60ca8ea5ced582fd648f7",
+      "edits": [
+        {
+          "offset": 2277,
+          "old": "\ttok, err := builder.CompactSerialize()\n",
+          "new": "\ttok, err := builder.Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "cas/stepcas/x5c_issuer.go",
+      "exists": true,
+      "before_sha256": "b9a902893285aa6a7e99047504bb6a15523b1fcb1ceabc2dabb6fec93592eae7",
+      "after_sha256": "906a764c2aba6a079d1890a55334be6d5200cb825e8fcb8a930694083eefbad4",
+      "edits": [
+        {
+          "offset": 2368,
+          "old": "\ttok, err := builder.CompactSerialize()\n",
+          "new": "\ttok, err := builder.Serialize()\n"
+        }
+      ]
+    },
+    {
+      "path": "go.mod",
+      "exists": true,
+      "before_sha256": "c4a90f197698ed952946c25f6ed180770513deeb0f900d8e17a58e3519c22fb1",
+      "after_sha256": "4e3c8f5146f99f75f580aaa55076d07772efe307a1b14fc4a6e653bd48499f7d",
+      "edits": [
+        {
+          "offset": 453,
+          "old": "\tgithub.com/go-jose/go-jose/v3 v3.0.4\n",
+          "new": ""
+        },
+        {
+          "offset": 1103,
+          "old": "\tgithub.com/smallstep/cli-utils v0.12.2\n",
+          "new": "\tgithub.com/smallstep/cli-utils v0.13.0\n"
+        },
+        {
+          "offset": 1457,
+          "old": "\tgo.step.sm/crypto v0.77.1\n",
+          "new": "\tgo.step.sm/crypto v0.92.0\n"
+        },
+        {
+          "offset": 4430,
+          "old": "\tgithub.com/go-jose/go-jose/v4 v4.1.3 // indirect\n",
+          "new": "\tgithub.com/go-jose/go-jose/v4 v4.1.9 // indirect\n"
+        }
+      ]
+    },
+    {
+      "path": "test/integration/requestid_test.go",
+      "exists": true,
+      "before_sha256": "92a0d7bbbcebb946d10e3aa7b9c2391178f73b478b55e2d4dff4d4b8bc4e208d",
+      "after_sha256": "4ca9e7ab8ca587c1ac94f133b406f55b46663fc27f1e4959bc30d1d68df65df6",
+      "edits": [
+        {
+          "offset": 7373,
+          "old": "\traw, err := jose.Signed(signer).Claims(cl).CompactSerialize()\n",
+          "new": "\traw, err := jose.Signed(signer).Claims(cl).Serialize()\n"
+        }
+      ]
+    }
+  ]
+}

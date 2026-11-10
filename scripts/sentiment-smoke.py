@@ -1,9 +1,10 @@
 """Offline synthetic inference acceptance; run in the sentiment image without networking."""
 import importlib.metadata as metadata
 import math
+import os
 from pathlib import Path
 
-model_dir = Path("/app/audit_logs/sentiment_audit/setfit_model_hpc_full")
+model_dir = Path(os.getenv("SETFIT_MODEL_DIR", "/app/audit_logs/sentiment_audit/setfit_model_hpc_full"))
 for artifact in ("model.safetensors", "model_head.pkl", "config_setfit.json", "modules.json"):
     with (model_dir / artifact).open("rb") as file:
         assert not file.read(128).startswith(b"version https://git-lfs.github.com/spec/v1"), (
@@ -27,6 +28,10 @@ def bounded(value, lower, upper, label):
     assert math.isfinite(value) and lower <= value <= upper, f"Invalid {label}"
     return value
 
+assert sentiment.pipe is None, "Import should not initialize FinBERT"
+assert sentiment.healthz()["check"] == "liveness"
+assert sentiment.pipe is None, "Liveness initialized FinBERT"
+assert sentiment.readyz()["status"] == "ready", "FinBERT readiness probe failed"
 assert sentiment.get_pipe() is not None, f"FinBERT failed to load: {sentiment.pipe_disabled_reason}"
 result = sentiment.analyze(sentiment.SentIn(texts=texts))
 assert result["engine"] == "finbert", "FinBERT inference silently fell back"
@@ -68,3 +73,8 @@ for sample in fallback["samples"]:
     bounded(sample, -1, 1, "SetFit fallback sample")
 bounded(fallback["confidence"], 0, 1, "SetFit fallback confidence")
 print("PASS: sentiment API SetFit fallback synthetic inference", flush=True)
+
+assert sentiment.readyz()["status"] == "degraded", "Working SetFit fallback must report degraded readiness"
+assert fallback["warning"] == "acceptance_forced_finbert_unavailable"
+assert fallback["sample_engines"] == ["setfit_fallback"] * len(texts)
+print("PASS: readiness and liveness contract", flush=True)

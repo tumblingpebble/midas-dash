@@ -4,6 +4,8 @@ from typing import Optional, Dict, Any, List
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import os, httpx, time
+from fastapi import Request
+from . import request_budget as budget
 from datetime import datetime, timezone
 from .trade_plan import build_trade_plan
 from .options_chain_yahoo import get_option_chain_candidates
@@ -38,18 +40,9 @@ def _parse_iso(s: str) -> Optional[datetime]:
     except Exception:
         return None
 
-def _get_json(url: str, params: dict | None = None) -> dict:
-    last_exc: Optional[Exception] = None
-    with httpx.Client(timeout=TIMEOUT, trust_env=False) as client:
-        for _ in range(RETRIES + 1):
-            try:
-                r = client.get(url, params=params)
-                r.raise_for_status()
-                return r.json()
-            except Exception as e:
-                last_exc = e
-                time.sleep(DELAY)
-    raise HTTPException(status_code=502, detail=f"GET {url} failed: {last_exc}")
+async def _get_json(url: str, params: dict | None = None, *, operation_budget=None) -> dict:
+    return await budget.request_json("GET", url, params=params, timeout=TIMEOUT,
+        retries=RETRIES, delay=DELAY, budget=operation_budget)
 
 
 def _is_missing_symbol_context(ctx: Dict[str, Any], ticker: str) -> bool:
@@ -84,29 +77,20 @@ def _is_missing_symbol_context(ctx: Dict[str, Any], ticker: str) -> bool:
     )
 
 
-def _post_json(url: str, payload: dict) -> dict:
-    last_exc: Optional[Exception] = None
-    with httpx.Client(timeout=TIMEOUT, trust_env=False) as client:
-        for _ in range(RETRIES + 1):
-            try:
-                r = client.post(url, json=payload)
-                r.raise_for_status()
-                return r.json()
-            except Exception as e:
-                last_exc = e
-                time.sleep(DELAY)
-    raise HTTPException(status_code=502, detail=f"POST {url} failed: {last_exc}")
+async def _post_json(url: str, payload: dict, *, operation_budget=None) -> dict:
+    # Current POST callers only compute; reassess replay safety for side effects.
+    return await budget.request_json("POST", url, payload=payload, timeout=TIMEOUT,
+        retries=RETRIES, delay=DELAY, budget=operation_budget)
 
 @app.get("/healthz")
 def healthz():
     return {"status": "ok", "service": "gateway", "version": "v1", "ts": iso_now(), "CTX_URL": CTX_URL, "REC_URL": REC_URL}
 
-@app.get("/api/run")
-def run(
+async def _run_impl(
     t: str = Query(..., alias="ticker"),
     explain: int = Query(0, ge=0, le=1),
 ) -> Dict[str, Any]:
-    ctx = _get_json(f"{CTX_URL}/api/features/v2", params={"ticker": t})
+    ctx = await _get_json(f"{CTX_URL}/api/features/v2", params={"ticker": t}, operation_budget=budget.CONTEXT_BUDGET_S)
     features: Dict[str, Any] = ctx.get("features", {}) or {}
     top_headline: Optional[Dict[str, str]] = ctx.get("top_headline")
     feature_note = ctx.get("error")
@@ -127,12 +111,12 @@ def run(
             ),
         )
 
-    rec = _post_json(f"{REC_URL}/api/recommend", features)
+    rec = await _post_json(f"{REC_URL}/api/recommend", features)
 
     explain_payload: Optional[Dict[str, Any]] = None
     if explain == 1:
         try:
-            explain_payload = _post_json(f"{REC_URL}/api/explain", features)
+            explain_payload = await _post_json(f"{REC_URL}/api/explain", features, operation_budget=budget.optional_budget(budget.OPTIONAL_BUDGET_S))
         except HTTPException:
             explain_payload = {"error": "explain unavailable"}
 
@@ -142,7 +126,7 @@ def run(
         last_px = float((quote or {}).get("last") or 0.0)
 
         if rec_class != "NO_ACTION" and last_px > 0.0:
-            option_chain_plan = get_option_chain_candidates(
+            option_chain_plan = await budget.optional_options(get_option_chain_candidates,
                 ticker=t,
                 spot=last_px,
                 strategy_family=rec_class,
@@ -167,14 +151,14 @@ def run(
 
     headline = top_headline or {"title": "", "publisher": "", "url": ""}
     try:
-        one = _post_json(f"{CTX_URL}/api/one_liner", {
+        one = await _post_json(f"{CTX_URL}/api/one_liner", {
             "class_": rec.get("class", "NO_ACTION"),
             "confidence": rec.get("confidence", 0.0),
             "title": headline.get("title", ""),
             "publisher": headline.get("publisher", ""),
             "url": headline.get("url", ""),
             "refs": refs,
-        })
+        }, operation_budget=budget.optional_budget(budget.OPTIONAL_BUDGET_S))
     except HTTPException:
         one = {"text": f"{rec.get('class', 'NO_ACTION')} · {int(rec.get('confidence', 0) * 100)}% confidence"}
 
@@ -206,3 +190,7 @@ def run(
         resp["explain"] = explain_payload
 
     return resp
+@app.get("/api/run")
+async def run(request: Request, t: str = Query(..., alias="ticker"),
+              explain: int = Query(0, ge=0, le=1)) -> Dict[str, Any]:
+    return await budget.run_with_budget(request, lambda: _run_impl(t, explain))

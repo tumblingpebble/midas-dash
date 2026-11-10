@@ -1,0 +1,147 @@
+name: native-arm-acceptance
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/native-arm-acceptance.yml'
+      - 'scripts/arm-*.py'
+      - 'scripts/sentiment-smoke.py'
+      - 'scripts/private-access-smoke.mjs'
+      - 'deploy/private/**'
+      - 'docker-compose.private.yml'
+      - 'requirements*.txt'
+      - 'services/**'
+      - 'platform_app/**'
+      - 'audit_logs/sentiment_audit/setfit_model_hpc_full/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: native-arm-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+env:
+  LIVE_PROVIDERS: '0'
+  FINNHUB_TOKEN: ''
+  FINNHUB_API_KEY: ''
+  TIINGO_TOKEN: ''
+  HF_TOKEN: ''
+  HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
+  HF_HUB_DISABLE_XET: '1'
+  COMPOSE_DISABLE_ENV_FILE: '1'
+  PIP_DISABLE_PIP_VERSION_CHECK: '1'
+  PIP_NO_CACHE_DIR: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+  OMP_NUM_THREADS: '2'
+  MKL_NUM_THREADS: '2'
+jobs:
+  native-model-runtime:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          lfs: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.11'
+      - name: Record native hardware and exact source
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = aarch64
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          df -B1 . "$RUNNER_TEMP"
+          free -b
+          python -m venv "$RUNNER_TEMP/midas-arm-venv"
+          echo "$RUNNER_TEMP/midas-arm-venv/bin" >> "$GITHUB_PATH"
+          mkdir "$RUNNER_TEMP/midas-arm-hf"
+          echo "HF_HOME=$RUNNER_TEMP/midas-arm-hf" >> "$GITHUB_ENV"
+          echo "SETFIT_MODEL_DIR=$GITHUB_WORKSPACE/audit_logs/sentiment_audit/setfit_model_hpc_full" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+      - name: Exact-lock wheel size admission and one-at-a-time install
+        run: python scripts/arm-locked-install.py --work "$RUNNER_TEMP/midas-arm-wheels" requirements.build.lock.txt requirements.sentiment.lock.txt
+      - name: Validate ARM installer and workflow contracts offline
+        run: python scripts/arm-acceptance.test.py
+      - name: Prepare only pinned model files without provider credentials
+        run: python scripts/arm-model-runtime.py prepare
+      - name: Real offline native model and API acceptance
+        env:
+          HF_HUB_OFFLINE: '1'
+          TRANSFORMERS_OFFLINE: '1'
+        run: python scripts/arm-model-runtime.py test
+      - name: Existing actual-source offline gateway and headline regressions
+        run: |
+          python scripts/gateway-budget-test.py
+          python scripts/headline-fallback-test.py
+      - name: Disk outcome (no cache/image/artifact upload)
+        if: always()
+        run: df -B1 . "$RUNNER_TEMP"
+  native-private-gate:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - name: Native hardware and bounded gate-job disk admission
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -eu
+          test "$(uname -m)" = aarch64
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$(docker info --format '{{.Architecture}}')" = aarch64
+          df -B1 . "$RUNNER_TEMP"
+          python3 -c 'import shutil; assert shutil.disk_usage(".").free >= 10*1024**3, "Gate build needs 10GiB admission; no cache pruning allowed"'
+      - name: Build reviewed patched gate and small fixtures only
+        run: |
+          set -eu
+          python3 scripts/arm-gate-build.py
+      - name: Fresh native gate vulnerability and secret scan
+        timeout-minutes: 10
+        run: |
+          set -eu
+          python3 -c 'import shutil,subprocess; root=subprocess.check_output(["docker","info","--format","{{.DockerRootDir}}"],text=True).strip(); assert min(shutil.disk_usage(".").free,shutil.disk_usage(root).free) >= 3*1024**3, "Scanner needs 1GiB plus 2GiB reserve"'
+          mkdir "$RUNNER_TEMP/arm-trivy"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$RUNNER_TEMP/arm-trivy:/root/.cache/trivy" \
+            aquasec/trivy@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436 image \
+            --scanners vuln,secret --severity HIGH,CRITICAL --exit-code 1 "$MIDAS_TEST_CADDY_IMAGE"
+          cat "$RUNNER_TEMP/arm-trivy/db/metadata.json"
+          mkdir "$RUNNER_TEMP/arm-sbom"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$RUNNER_TEMP/arm-trivy:/root/.cache/trivy" -v "$RUNNER_TEMP/arm-sbom:/out" \
+            aquasec/trivy@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436 image \
+            --skip-db-update --format cyclonedx --output /out/raw.cdx.json "$MIDAS_TEST_CADDY_IMAGE"
+          python3 scripts/caddy-source-sbom.py "$RUNNER_TEMP/arm-sbom/raw.cdx.json" \
+            deploy/private/caddy/certificates-backport.json "$RUNNER_TEMP/arm-sbom/source-complement.cdx.json"
+          docker run --rm --network none -v "$RUNNER_TEMP/arm-trivy:/root/.cache/trivy" -v "$RUNNER_TEMP/arm-sbom:/out" \
+            aquasec/trivy@sha256:a22415a38938a56c379387a8163fcb0ce38b10ace73e593475d3658d578b2436 sbom \
+            --skip-db-update --list-all-pkgs --scanners vuln --severity HIGH,CRITICAL --exit-code 1 --format json --output /out/source-scan.json /out/source-complement.cdx.json
+          python3 scripts/caddy-source-sbom.py --verify-scan "$RUNNER_TEMP/arm-sbom/source-scan.json"
+      - name: Ordinary frontend regressions and actual private gate matrix
+        env:
+          MIDAS_TEST_REPO: ${{ github.workspace }}
+          MIDAS_TEST_CANDIDATE: ${{ github.workspace }}
+          MIDAS_TEST_PYTHON_IMAGE: midas-arm-python
+          MIDAS_TEST_WEB_IMAGE: midas-arm-web
+        run: |
+          set -eu
+          npm ci --prefix platform_app
+          npm run test:storage --prefix platform_app
+          npm run test:run --prefix platform_app
+          mkdir "$RUNNER_TEMP/private-evidence"
+          MIDAS_TEST_EVIDENCE="$RUNNER_TEMP/private-evidence" node scripts/private-access-smoke.mjs
+      - name: Disk outcome (no cache/image/artifact upload)
+        if: always()
+        run: df -B1 . "$RUNNER_TEMP"

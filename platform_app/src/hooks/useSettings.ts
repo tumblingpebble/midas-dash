@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
+import { browserStorage } from "../lib/browserStorage"
 
 export type AppSettings = {
   enableExplain: boolean
@@ -7,12 +8,12 @@ export type AppSettings = {
 const KEY = "midas_dash_settings_v1"
 
 function load(): AppSettings {
-  const raw = localStorage.getItem(KEY)
+  const raw = browserStorage.getItem(KEY)
   if (!raw) return { enableExplain: false }
   try {
     const parsed = JSON.parse(raw) as Partial<AppSettings>
     return {
-      enableExplain: Boolean(parsed.enableExplain),
+      enableExplain: parsed.enableExplain === true,
     }
   } catch {
     return { enableExplain: false }
@@ -21,9 +22,13 @@ function load(): AppSettings {
 
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(() => load())
+  const lastHandled = useRef(settings)
 
   useEffect(() => {
-    localStorage.setItem(KEY, JSON.stringify(settings))
+    // Preserve unread saved preferences until the user actually changes them.
+    if (lastHandled.current === settings) return
+    browserStorage.setJson(KEY, settings)
+    lastHandled.current = settings
   }, [settings])
 
   const api = useMemo(

@@ -1,0 +1,146 @@
+# Standalone profile. Never merge with docker-compose.yml.
+# Provider access is deliberately disabled until separately authorized.
+services:
+  private_gate:
+    image: midas-private-caddy:2.11.9-net0.62.0
+    pull_policy: build
+    build:
+      context: ./deploy/private/caddy
+      dockerfile: Dockerfile
+    entrypoint: [/bin/sh, /etc/caddy/private-entrypoint.sh]
+    environment:
+      MIDAS_PRIVATE_HOST: "${MIDAS_PRIVATE_HOST:?Set an owned DNS hostname, without scheme or path}"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - type: bind
+        source: ./deploy/private/private-entrypoint.sh
+        target: /etc/caddy/private-entrypoint.sh
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./deploy/private/Caddyfile
+        target: /etc/caddy/Caddyfile
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: "${MIDAS_PRIVATE_AUTH_DIR:?Set an existing private directory outside the checkout}"
+        target: /run/midas-auth
+        read_only: true
+        bind:
+          create_host_path: false
+      - private_caddy_data:/data
+      - private_caddy_config:/config
+    networks: [edge, backend]
+    depends_on: [midas_dash]
+    restart: unless-stopped
+
+  midas_dash:
+    build:
+      context: .
+      dockerfile: platform_app/Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_PRIVATE_ACCESS: "1"
+    volumes:
+      - type: bind
+        source: ./platform_app/nginx.compose.conf
+        target: /etc/nginx/conf.d/default.conf
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [backend]
+    depends_on:
+      gateway_api:
+        condition: service_healthy
+
+  gateway_api:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        REQ_FILE: requirements.base.txt
+    environment:
+      CTX_URL: http://context_api:8012
+      REC_URL: http://recommender_api:8014
+    command: [uvicorn, services.gateway_api.app:app, --host, 0.0.0.0, --port, "8015"]
+    networks: [backend]
+    depends_on:
+      context_api:
+        condition: service_healthy
+      recommender_api:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:8015/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  context_api:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        REQ_FILE: requirements.base.txt
+    environment:
+      LIVE_PROVIDERS: "0"
+      FINNHUB_TOKEN: ""
+      FINNHUB_API_KEY: ""
+      TIINGO_TOKEN: ""
+      SENT_URL: http://sentiment_api:8016
+      SENT_TIMEOUT_S: "20"
+    command: [uvicorn, services.context_api.app:app, --host, 0.0.0.0, --port, "8012"]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:8012/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  recommender_api:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+      args:
+        REQ_FILE: requirements.base.txt
+    environment:
+      MODEL_PATH: services/recommender_api/model.joblib
+    command: [uvicorn, services.recommender_api.app:app, --host, 0.0.0.0, --port, "8014"]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:8014/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+
+  sentiment_api:
+    build:
+      context: .
+      dockerfile: services/Dockerfile.sentiment
+    environment:
+      SENT_TTL_S: "90"
+      SETFIT_MODEL_DIR: /app/audit_logs/sentiment_audit/setfit_model_hpc_full
+      HF_HOME: /app/.hf_cache
+      HF_HUB_DISABLE_XET: "1"
+    command: [uvicorn, services.sentiment_api.app:app, --host, 0.0.0.0, --port, "8016"]
+    networks: [backend]
+    healthcheck:
+      test: [CMD, curl, -fsS, "http://127.0.0.1:8016/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+networks:
+  edge: {}
+  backend:
+    internal: true
+volumes:
+  private_caddy_data: {}
+  private_caddy_config: {}

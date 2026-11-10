@@ -6,3 +6,6 @@ setfit==1.2.0
 sentence-transformers>=5.4.1,<6
 datasets>=4
 scikit-learn>=1.5
+# Security pins for aiohttp DoS and filelock database-file overwrite advisories.
+aiohttp==3.14.4
+filelock==4.2.1
